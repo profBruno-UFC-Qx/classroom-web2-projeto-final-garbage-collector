@@ -1,11 +1,14 @@
 <script setup lang="ts">
-
+import { RouterView } from 'vue-router'
+import { Header, Footer } from './components/layout/'
 </script>
 
 <template>
-
+  <div id="app-container">
+    <Header />
+    <main class="main-content">
+      <RouterView />
+    </main>
+    <Footer />
+  </div>
 </template>
-
-<style scoped>
-
-</style>
