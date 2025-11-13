@@ -1,31 +1,26 @@
 <script setup lang="ts">
 import BaseButton from '@/components/base/BaseButton.vue'
-import { MapPin, Calendar, Users, Star, ArrowRight } from 'lucide-vue-next'
+import { MapPin, Calendar, Users, Star } from 'lucide-vue-next'
 </script>
 
 <template>
   <div class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm transition-shadow hover:shadow-md">
+
     <!-- Header -->
-    <div class="flex items-start justify-between mb-5">
-      <div class="flex items-center gap-3">
-        <img
-          src="/images/profile.png"
-          alt="Maria Santos"
-          class="h-12 w-12 rounded-full object-cover ring-2 ring-gray-100"
-        />
-        <div>
-          <h3 class="font-semibold text-gray-900">Maria Santos</h3>
-          <div class="flex items-center gap-1.5 mt-0.5">
-            <Star :size="14" class="fill-amber-400 text-amber-400" />
-            <span class="text-sm text-gray-600">4.9</span>
-            <span class="text-gray-300">•</span>
-            <span class="text-sm text-gray-500">Honda Civic</span>
-          </div>
+    <div class="flex items-center gap-3 mb-3">
+      <img
+        src="/images/profile.png"
+        alt="Maria Santos"
+        class="h-12 w-12 rounded-full object-cover ring-2 ring-gray-100"
+      />
+      <div>
+        <h3 class="font-semibold text-gray-900">Maria Santos</h3>
+        <div class="flex items-center gap-1.5 mt-0.5">
+          <Star :size="14" class="fill-amber-400 text-amber-400" />
+          <span class="text-sm text-gray-600">4.9</span>
+          <span class="text-gray-300">•</span>
+          <span class="text-sm text-gray-500">Honda Civic</span>
         </div>
-      </div>
-      <div class="text-right">
-        <div class="text-2xl font-bold text-gray-900">R$ 15</div>
-        <div class="text-xs text-gray-500">por pessoa</div>
       </div>
     </div>
 
