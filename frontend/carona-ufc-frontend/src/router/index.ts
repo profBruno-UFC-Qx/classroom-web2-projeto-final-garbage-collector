@@ -25,6 +25,11 @@ const router = createRouter({
       component: () => import('../views/BuscarCaronaView.vue')
     },
     {
+      path: "/oferecer-carona",
+      name: 'oferecer-carona',
+      component: () => import('../views/OferecerCaronaView.vue')
+    },
+    {
       path: '/about',
       name: 'about',
       component: () => import('../views/AboutView.vue'),
