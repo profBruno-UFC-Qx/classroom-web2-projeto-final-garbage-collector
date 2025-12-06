@@ -25,6 +25,10 @@ const props = defineProps({
     type: Boolean,
     default: false,
   },
+  disabled: {
+    type: Boolean,
+    default: false
+  },
 })
 
 const inputType = computed(() => {
@@ -57,12 +61,18 @@ const togglePasswordVisibility = () => {
       :name="id"
       :placeholder="placeholder"
       :required="required"
+      :disabled="disabled"
       class="
         mt-1 block w-full rounded-md border-gray-300 px-3 py-2
         shadow-sm transition-colors duration-200
         focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500
       "
-      :class="{ 'pr-10': isPasswordField }"
+      :class="[
+          isPasswordField ? 'pr-10' : 'pr-3',
+          disabled
+            ? 'bg-gray-100 text-gray-500 cursor-not-allowed opacity-60'
+            : 'bg-white'
+      ]"
     >
 
     <button
