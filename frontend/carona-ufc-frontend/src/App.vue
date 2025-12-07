@@ -6,7 +6,7 @@ import { Header, Footer } from './components/layout/'
 <template>
   <div id="app-container">
     <Header />
-    <main class="main-content flex items-center justify-center">
+    <main class="main-content flex items-start justify-center">
       <RouterView />
     </main>
     <Footer />
