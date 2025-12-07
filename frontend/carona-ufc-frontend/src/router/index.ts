@@ -44,6 +44,16 @@ const router = createRouter({
       name: 'minhas-caronas',
       component: () => import('../views/MinhasCaronasView.vue')
     },
+    {
+      path: "/meus-veiculos",
+      name: 'meus-veiculos',
+      component: () => import('../views/MeusVeiculosView.vue')
+    },
+    {
+      path: "/meus-veiculos/novo",
+      name: 'novo-veiculo',
+      component: () => import('../views/CadastrarVeiculoView.vue')
+    },
   ],
 })
 

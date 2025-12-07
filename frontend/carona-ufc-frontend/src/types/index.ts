@@ -6,7 +6,13 @@ export interface Carona {
   horario: string
   motorista: string
   valor: number
-  // O papel é opcional porque ao buscar caronas públicas,
-  // o usuário ainda não tem um papel definido nela.
   papel?: 'motorista' | 'passageiro' | 'viewer'
+}
+
+export interface Veiculo {
+  id: number
+  marca: string
+  modelo: string
+  cor: string
+  placa: string  
 }
