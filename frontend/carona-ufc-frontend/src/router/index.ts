@@ -25,6 +25,11 @@ const router = createRouter({
       component: () => import('../views/BuscarCaronaView.vue')
     },
     {
+      path: "/carona/:id",
+      name: 'carona-detalhes',
+      component: () => import('../views/CaronaDetalhesView.vue')
+    },
+    {
       path: "/oferecer-carona",
       name: 'oferecer-carona',
       component: () => import('../views/OferecerCaronaView.vue')
@@ -53,6 +58,11 @@ const router = createRouter({
       path: "/meus-veiculos/novo",
       name: 'novo-veiculo',
       component: () => import('../views/CadastrarVeiculoView.vue')
+    },
+    {
+      path: "/admin",
+      name: 'admin',
+      component: () => import('../views/AdminDashboardView.vue')
     },
   ],
 })

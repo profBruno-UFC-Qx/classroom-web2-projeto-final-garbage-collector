@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useRouter } from 'vue-router' 
 import BaseButton from '@/components/base/BaseButton.vue'
 import { MapPin, Calendar, Users, Star } from 'lucide-vue-next'
 
@@ -12,10 +13,12 @@ const props = defineProps({
     default: 'viewer'
   },
   carona: {
-    type: Object as PropType<Carona | null>, 
+    type: Object as PropType<Carona | null>,
     default: null
   }
 })
+
+const router = useRouter()
 
 const buttonLabel = computed(() => {
   if (props.role === 'motorista') return 'Gerenciar Carona'
@@ -29,7 +32,8 @@ const buttonVariant = computed(() => {
 })
 
 const handleAction = () => {
-  console.log(`Ação acionada para papel: ${props.role}`)
+  const caronaId = props.carona?.id || 1
+  router.push(`/carona/${caronaId}`)
 }
 </script>
 
