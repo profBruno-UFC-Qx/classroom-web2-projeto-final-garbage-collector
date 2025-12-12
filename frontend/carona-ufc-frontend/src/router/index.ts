@@ -59,11 +59,6 @@ const router = createRouter({
       name: 'novo-veiculo',
       component: () => import('../views/CadastrarVeiculoView.vue')
     },
-    {
-      path: "/admin",
-      name: 'admin',
-      component: () => import('../views/AdminDashboardView.vue')
-    },
   ],
 })
 

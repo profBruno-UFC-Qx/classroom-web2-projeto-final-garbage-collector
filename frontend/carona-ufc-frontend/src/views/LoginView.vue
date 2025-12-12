@@ -1,17 +1,33 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { RouterLink } from 'vue-router'
+import { RouterLink, useRouter } from 'vue-router'
+import { toast } from 'vue3-toastify'
 import BaseInput from '@/components/base/BaseInput.vue'
 import BaseButton from '@/components/base/BaseButton.vue'
+import { useAuthStore } from '@/stores/auth'
+
+const router = useRouter()
+const authStore = useAuthStore()
 
 const email = ref('')
 const password = ref('')
+const isLoading = ref(false)
 
-const handleLogin = () => {
-  console.log('Dados do Login:', {
-    email: email.value,
-    password: password.value,
-  })
+const handleLogin = async () => {
+  isLoading.value = true
+
+  try {
+    await authStore.login(email.value, password.value)
+    toast.success('Bem-vindo de volta!')
+    router.push('/buscar-carona')
+  }
+  catch (error: any) {
+    const mensagem = error.response?.data?.message || 'Erro ao realizar login.'
+    toast.error(mensagem)
+  }
+  finally {
+    isLoading.value = false
+  }
 }
 </script>
 
