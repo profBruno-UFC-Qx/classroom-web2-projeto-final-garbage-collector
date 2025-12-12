@@ -1,25 +1,44 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { RouterLink } from 'vue-router'
+import { RouterLink, useRouter } from 'vue-router'
+import { toast } from 'vue3-toastify'
 import BaseInput from '@/components/base/BaseInput.vue'
 import BaseButton from '@/components/base/BaseButton.vue'
+import { useAuthStore } from '@/stores/auth'
+
+const router = useRouter()
+const authStore = useAuthStore()
 
 const fullName = ref('')
 const email = ref('')
 const password = ref('')
 const confirmPassword = ref('')
+const isLoading = ref(false)
 
-const handleRegister = () => {
+const handleRegister = async () => {
   if (password.value !== confirmPassword.value) {
-    alert('As senhas não conferem!')
+    toast.warning('As senhas não conferem!')
     return
   }
 
-  console.log('Dados do Cadastro:', {
-    fullName: fullName.value,
-    email: email.value,
-    password: password.value,
-  })
+  isLoading.value = true
+
+  try {
+    await authStore.register(fullName.value, email.value, password.value)
+    toast.success('Conta criada com sucesso! Faça login.')
+    router.push('/login')
+
+  } catch (error: any) {
+    const data = error.response?.data
+
+    if (data?.errors && Array.isArray(data.errors)) {
+      toast.error(data.errors[0])
+    } else {
+      toast.error(data?.message || 'Erro ao criar conta.')
+    }
+  } finally {
+    isLoading.value = false
+  }
 }
 </script>
 
@@ -75,8 +94,8 @@ const handleRegister = () => {
         />
 
         <div>
-          <BaseButton type="submit">
-            Criar conta
+          <BaseButton type="submit" class="w-full" :disabled="isLoading">
+            {{ isLoading ? 'Criando conta...' : 'Criar conta' }}
           </BaseButton>
         </div>
       </form>

@@ -36,11 +36,18 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   const register = async (name: string, email: string, pass: string) => {
-    await api.post('/auth/register', {
-      name,
-      email,
-      password: pass
-    })
+    try {
+      await api.post('/auth/register', {
+        name,
+        email,
+        password: pass
+      })
+      // Não faço login direto porque meu back não retorna o token no registro,
+      // por questões de segurança.
+    } catch (error: any) {
+      console.error('Erro no cadastro:', error.response?.data?.message)
+      throw error
+    }
   }
 
   const logout = () => {
