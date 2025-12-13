@@ -1,14 +1,15 @@
 import "reflect-metadata";
 import app from "./app";
 import { AppDataSource } from "./config/data-source";
+import { env } from "./config/env"; 
 
-const PORT = process.env.PORT || 3000;
+
 AppDataSource.initialize()
   .then(() => {
     console.log("Banco de dados inicializado com sucesso.");
 
-    app.listen(PORT, () => {
-      console.log(`Servidor rodando em http://localhost:${PORT}`);
+    app.listen(env.PORT, () => {
+      console.log(`Servidor rodando em http://localhost:${env.PORT}`);
     });
   })
   .catch((err) => {

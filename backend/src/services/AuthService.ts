@@ -3,13 +3,10 @@ import { User } from "../entities/User";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { RegisterInput, LoginInput } from "../schemas/auth.schema";
+import { AppError } from "../errors/AppError"; 
+import { env } from "../config/env"; 
 
 const userRepository = AppDataSource.getRepository(User);
-
-const JWT_SECRET = process.env.JWT_SECRET || "meu_segredo_jwt";
-if (!JWT_SECRET) {
-  throw new Error("JWT_SECRET não está definido nas variáveis de ambiente");
-}
 
 export class AuthService {
 
@@ -18,7 +15,7 @@ export class AuthService {
 
     const userExists = await userRepository.findOneBy({ email });
     if (userExists) {
-      throw new Error("Este email já está em uso.");
+      throw new AppError("Este email já está em uso.", 409);
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -44,18 +41,19 @@ export class AuthService {
     const { email, password } = data;
 
     const user = await userRepository.findOneBy({ email });
+    
     if (!user) {
-      throw new Error("Credenciais inválidas.");
+      throw new AppError("Credenciais inválidas.", 401);
     }
 
     const isValidPassword = await bcrypt.compare(password, user.password);
     if (!isValidPassword) {
-      throw new Error("Credenciais inválidas.");
+      throw new AppError("Credenciais inválidas.", 401);
     }
 
     const token = jwt.sign(
       { id: user.id, role: user.role }, 
-      JWT_SECRET, 
+      env.JWT_SECRET, 
       { expiresIn: "1d" }
     );
 
