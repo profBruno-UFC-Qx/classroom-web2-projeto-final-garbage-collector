@@ -1,56 +1,73 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
+import { ArrowLeft } from 'lucide-vue-next'
+import { useVehicleStore } from '@/stores/vehicle'
+import { toast } from 'vue3-toastify'
 import BaseInput from '@/components/base/BaseInput.vue'
 import BaseButton from '@/components/base/BaseButton.vue'
-import { ArrowLeft } from 'lucide-vue-next'
 
 const router = useRouter()
+const vehicleStore = useVehicleStore()
 
-const form = ref({
-  marca: '',
-  modelo: '',
-  cor: '',
-  placa: ''
-})
+const brand = ref('')
+const model = ref('')
+const color = ref('')
+const plate = ref('')
+const isLoading = ref(false)
+
+const handlePlateInput = (event: Event) => {
+  const target = event.target as HTMLInputElement
+  plate.value = target.value.toUpperCase().replace(/\s/g, '')
+}
 
 const handleSubmit = async () => {
-  console.log('Cadastrando veiculo...', form.value)
+  isLoading.value = true
+  try {
+    await vehicleStore.addVehicle({
+      brand: brand.value,
+      model: model.value,
+      color: color.value,
+      plate: plate.value
+    })
 
-  await new Promise(resolve => setTimeout(resolve, 500))
-  router.push('/meus-veiculos')
+    toast.success('Veículo cadastrado com sucesso!')
+    router.push('/meus-veiculos')
+  } catch (error) {
+    // Erro já tratado na store (toast)
+  } finally {
+    isLoading.value = false
+  }
 }
 </script>
 
 <template>
-  <div class="mx-auto max-w-2xl space-y-6">
+  <div class="mx-auto max-w-xl px-4 py-8">
 
     <button
       @click="router.back()"
-      class="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-900"
+      class="mb-6 flex items-center gap-2 text-sm font-medium text-gray-600 hover:text-gray-900"
     >
-      <ArrowLeft :size="16" />
+      <ArrowLeft :size="20" />
       Voltar para meus veículos
     </button>
 
-    <div class="rounded-lg bg-white p-8 shadow-md">
-      <div class="mb-8">
-        <h1 class="text-2xl font-semibold text-gray-900">Novo Veículo</h1>
-        <p class="mt-1 text-gray-600">Preencha os dados do veículo que será utilizado.</p>
-      </div>
+    <div class="rounded-lg bg-white p-8 shadow-sm border border-gray-100">
+      <h1 class="text-2xl font-bold text-gray-900">Novo Veículo</h1>
+      <p class="mt-1 text-sm text-gray-600">Preencha os dados do carro.</p>
 
-      <form @submit.prevent="handleSubmit" class="space-y-6">
+      <form class="mt-8 space-y-6" @submit.prevent="handleSubmit">
 
-        <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
+        <div class="grid gap-6 sm:grid-cols-2">
           <BaseInput
-            v-model="form.marca"
+            v-model="brand"
             label="Marca"
             id="marca"
             placeholder="Ex: Honda"
             required
           />
           <BaseInput
-            v-model="form.modelo"
+            v-model="model"
             label="Modelo"
             id="modelo"
             placeholder="Ex: Civic"
@@ -58,36 +75,30 @@ const handleSubmit = async () => {
           />
         </div>
 
-        <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
+        <div class="grid gap-6 sm:grid-cols-2">
           <BaseInput
-            v-model="form.cor"
+            v-model="color"
             label="Cor"
             id="cor"
             placeholder="Ex: Prata"
             required
           />
           <BaseInput
-            v-model="form.placa"
+            v-model="plate"
             label="Placa"
+            placeholder="ABC1234"
             id="placa"
-            placeholder="Ex: ABC-1234"
             required
+            @input="handlePlateInput"
+            maxlength="7"
           />
         </div>
 
-        <div class="flex justify-end gap-3 border-t border-gray-100 pt-6">
-          <BaseButton
-            type="button"
-            variant="secondary"
-            @click="router.back()"
-          >
-            Cancelar
-          </BaseButton>
-          <BaseButton type="submit">
-            Cadastrar Veículo
+        <div class="pt-4">
+          <BaseButton type="submit" class="w-full" :disabled="isLoading">
+            {{ isLoading ? 'Salvando...' : 'Cadastrar Veículo' }}
           </BaseButton>
         </div>
-
       </form>
     </div>
   </div>
