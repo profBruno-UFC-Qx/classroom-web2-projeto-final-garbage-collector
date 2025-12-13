@@ -1,9 +1,11 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn } from "typeorm";
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, OneToMany } from "typeorm";
+import { Vehicle } from "./Vehicle";
+import { Ride } from "./Ride";
 
 @Entity()
 export class User {
   @PrimaryGeneratedColumn()
-  id!: number;
+  id!: number; 
 
   @Column()
   name!: string;
@@ -12,22 +14,28 @@ export class User {
   email!: string;
 
   @Column()
-  password!: string; 
+  password!: string;
 
   @Column({ default: 'passageiro' })
   role!: string;
 
   @Column({ nullable: true })
-  phone!: string;
+  phone?: string; 
 
   @Column({ nullable: true })
-  avatar!: string;
+  avatar?: string;
 
   @Column({ type: 'float', default: 5.0 })
   rating!: number;
 
   @Column({ default: 0 })
   totalRides!: number;
+
+  @OneToMany(() => Vehicle, (vehicle) => vehicle.user)
+  vehicles!: Vehicle[];
+
+  @OneToMany(() => Ride, (ride) => ride.driver)
+  ridesAsDriver!: Ride[];
 
   @CreateDateColumn()
   createdAt!: Date;
