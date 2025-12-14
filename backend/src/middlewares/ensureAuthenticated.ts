@@ -14,7 +14,6 @@ export const ensureAuthenticated = (req: Request, res: Response, next: NextFunct
   try {
     const decoded = jwt.verify(token, env.JWT_SECRET) as { id: number; role: string };
     
-    // @ts-ignore 
     req.user = { id: decoded.id, role: decoded.role };
 
     return next();
