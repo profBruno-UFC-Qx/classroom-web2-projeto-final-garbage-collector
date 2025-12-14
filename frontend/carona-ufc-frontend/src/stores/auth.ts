@@ -14,7 +14,8 @@ interface User {
 export const useAuthStore = defineStore('auth', () => {
   const router = useRouter()
 
-  const user = ref<User | null>(null)
+  const storedUser = localStorage.getItem('user')
+  const user = ref<User | null>(storedUser ? JSON.parse(storedUser) : null)
   const token = ref<string | null>(localStorage.getItem('token'))
   const isAuthenticated = computed(() => !!token.value)
 
