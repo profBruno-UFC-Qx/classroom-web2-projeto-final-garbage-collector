@@ -1,17 +1,27 @@
 import { Request, Response, NextFunction } from "express";
-import { ZodObject, ZodError } from "zod";
+import { ZodObject } from "zod"; 
+import { AppError } from "../errors/AppError";
 
-export const validate = (schema: ZodObject) => async (req: Request, res: Response, next: NextFunction) => {
+
+export const validate = (schema: ZodObject) => (req: Request, res: Response, next: NextFunction) => {
   try {
-    await schema.parseAsync(req.body);
+    req.body = schema.parse(req.body);
     next();
   } catch (error) {
-    if (error instanceof ZodError) {
-      return res.status(400).json({
-        message: "Erro de validação",
-        errors: error.issues.map((e) => e.message),
-      });
-    }
-    return res.status(500).send(error);
+    next(error);
+  }
+};
+
+
+export const validateFile = (schema: ZodObject) => (req: Request, res: Response, next: NextFunction) => {
+  if (!req.file) {
+    return next(new AppError("Nenhuma imagem enviada.", 400));
+  }
+
+  try {
+    schema.parse(req.file);
+    next();
+  } catch (error) {
+    next(error);
   }
 };
