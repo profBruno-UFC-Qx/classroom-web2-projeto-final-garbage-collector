@@ -46,7 +46,10 @@ const router = createRouter({
       path: "/oferecer-carona",
       name: 'oferecer-carona',
       component: () => import('../views/OferecerCaronaView.vue'),
-      meta: { requiresAuth: true }
+      meta: {
+        requiresAuth: true,
+        role: 'motorista'
+      }
     },
     {
       path: "/minhas-caronas",
@@ -54,7 +57,24 @@ const router = createRouter({
       component: () => import('../views/MinhasCaronasView.vue'),
       meta: { requiresAuth: true }
     },
-
+    {
+      path: "/meus-veiculos",
+      name: 'meus-veiculos',
+      component: () => import('../views/MeusVeiculosView.vue'),
+      meta: {
+        requiresAuth: true,
+        role: 'motorista'
+      }
+    },
+    {
+      path: "/meus-veiculos/novo",
+      name: 'novo-veiculo',
+      component: () => import('../views/CadastrarVeiculoView.vue'),
+      meta: {
+        requiresAuth: true,
+        role: 'motorista'
+      }
+    },
     // --- Rotas de Usuário ---
     {
       path: "/perfil",
@@ -62,16 +82,11 @@ const router = createRouter({
       component: () => import('../views/ProfileView.vue'),
       meta: { requiresAuth: true }
     },
+    // --- Rota para Acesso Não Autorizado ---
     {
-      path: "/meus-veiculos",
-      name: 'meus-veiculos',
-      component: () => import('../views/MeusVeiculosView.vue'),
-      meta: { requiresAuth: true }
-    },
-    {
-      path: "/meus-veiculos/novo",
-      name: 'novo-veiculo',
-      component: () => import('../views/CadastrarVeiculoView.vue'),
+      path: '/sem-permissao',
+      name: 'unauthorized',
+      component: () => import('../views/UnauthorizedView.vue'),
       meta: { requiresAuth: true }
     },
   ],
@@ -81,12 +96,13 @@ router.beforeEach((to, from, next) => {
   const authStore = useAuthStore()
 
   if (to.meta.requiresAuth && !authStore.isAuthenticated) {
-    // Se não estiver logado, manda pro login
     next('/login')
   }
   else if (to.meta.requiresGuest && authStore.isAuthenticated) {
-    // Se já estiver logado, não deixa ir pro login de novo, manda pra busca
     next('/buscar-carona')
+  }
+  else if (to.meta.role && authStore.user?.role !== to.meta.role) {
+    return next('/sem-permissao')
   }
   else {
     next()
