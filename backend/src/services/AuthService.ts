@@ -10,7 +10,7 @@ const userRepository = AppDataSource.getRepository(User);
 
 export class AuthService {
 
-  static async register(data: RegisterInput) {
+  static async register(data: RegisterInput): Promise<User> {
     const { name, email, password } = data;
 
     const userExists = await userRepository.findOneBy({ email });
@@ -28,13 +28,7 @@ export class AuthService {
     });
 
     await userRepository.save(user);
-
-    return {
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      role: user.role
-    };
+    return user;
   }
 
   static async login(data: LoginInput) {
@@ -57,15 +51,6 @@ export class AuthService {
       { expiresIn: "1d" }
     );
 
-    return {
-      token,
-      user: {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        avatar: user.avatar
-      }
-    };
+    return { token, user };
   }
 }
