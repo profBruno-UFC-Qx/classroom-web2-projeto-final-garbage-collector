@@ -13,7 +13,7 @@ export const updateUserSchema = z.object({
     .string()
     .transform(val => val.replace(/\D/g, ''))
     .refine(val => /^[1-9]{2}9?\d{8}$/.test(val), {
-      message: "Telefone inválido. Use: DDD + número (10 ou 11 dígitos)"
+      message: "Formato de telefone inválido.",
     })
     .optional(),
   showPhone: z.boolean().optional(),

@@ -1,15 +1,8 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
+import type { User } from '@/types'
 import api from '@/utils/api'
-
-interface User {
-  id: number
-  name: string
-  email: string
-  role: 'passageiro' | 'motorista' | 'admin'
-  avatar?: string
-}
 
 export const useAuthStore = defineStore('auth', () => {
   const router = useRouter()
@@ -43,12 +36,19 @@ export const useAuthStore = defineStore('auth', () => {
         email,
         password: pass
       })
-      // Não faço login direto porque meu back não retorna o token no registro,
-      // por questões de segurança.
+      // Não faço login direto porque meu back não retorna o token no registro
     } catch (error: any) {
       console.error('Erro no cadastro:', error.response?.data?.message)
       throw error
     }
+  }
+
+  const updateUser = (userData: Partial<User>) => {
+    if (!user.value) return
+
+    user.value = { ...user.value, ...userData }
+
+    localStorage.setItem('user', JSON.stringify(user.value))
   }
 
   const logout = () => {
@@ -59,12 +59,19 @@ export const useAuthStore = defineStore('auth', () => {
     router.push('/login')
   }
 
+  const setToken = (newToken: string) => {
+    token.value = newToken
+    localStorage.setItem('token', newToken)
+  }
+
   return {
     user,
     token,
     isAuthenticated,
     login,
     register,
-    logout
+    logout,
+    updateUser,
+    setToken
   }
 })

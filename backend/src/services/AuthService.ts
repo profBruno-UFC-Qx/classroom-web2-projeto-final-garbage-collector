@@ -10,6 +10,14 @@ const userRepository = AppDataSource.getRepository(User);
 
 export class AuthService {
 
+  static generateToken(user: User): string {
+    return jwt.sign(
+      { id: user.id, role: user.role }, 
+      env.JWT_SECRET,
+      { expiresIn: "1d" }
+    );
+  }
+
   static async register(data: RegisterInput): Promise<User> {
     const { name, email, password } = data;
 
@@ -45,11 +53,7 @@ export class AuthService {
       throw new AppError("Credenciais inválidas.", 401);
     }
 
-    const token = jwt.sign(
-      { id: user.id, role: user.role }, 
-      env.JWT_SECRET, 
-      { expiresIn: "1d" }
-    );
+    const token = this.generateToken(user);
 
     return { token, user };
   }

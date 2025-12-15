@@ -14,5 +14,17 @@ export interface Veiculo {
   marca: string
   modelo: string
   cor: string
-  placa: string  
+  placa: string
+}
+
+export interface User {
+  id: number;
+  name: string;
+  email: string;
+  phone: string;
+  role: 'passageiro' | 'motorista' | 'admin';
+  avatar: string;
+  rating: number;
+  showPhone: boolean;
+  emailNotifications: boolean;
 }

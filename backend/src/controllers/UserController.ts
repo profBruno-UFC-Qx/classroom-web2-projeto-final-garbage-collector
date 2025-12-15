@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import { UserService } from "../services/UserService";
+import { AuthService } from "../services/AuthService";
 import { toUserDTO } from "../dto/user.dto";
 import { AppError } from "../errors/AppError";
 
@@ -31,9 +32,12 @@ export class UserController {
 
     const user = await UserService.becomeDriver(userId);
 
+    const newToken = AuthService.generateToken(user);
+
     return res.json({
       message: "Parabéns! Agora você é um motorista.",
-      user: toUserDTO(user)
+      user: toUserDTO(user),
+      token: newToken 
     });
   }
 

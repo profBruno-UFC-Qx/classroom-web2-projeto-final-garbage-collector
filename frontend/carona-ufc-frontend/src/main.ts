@@ -4,6 +4,7 @@ import 'vue3-toastify/dist/index.css'
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
 import Vue3Toastify, { type ToastContainerOptions } from 'vue3-toastify'
+import { vMaska } from "maska/vue"
 
 import App from './App.vue'
 import router from './router'
@@ -18,5 +19,7 @@ app.use(Vue3Toastify, {
   position: 'top-right',
   clearOnUrlChange: false,
 } as ToastContainerOptions)
+
+app.directive("maska", vMaska)
 
 app.mount('#app')

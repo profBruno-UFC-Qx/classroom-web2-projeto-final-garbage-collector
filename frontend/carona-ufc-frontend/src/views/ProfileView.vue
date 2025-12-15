@@ -1,94 +1,218 @@
 <script setup lang="ts">
-import { ref } from 'vue'
-import { Star, CheckSquare, Square } from 'lucide-vue-next'
+import { ref, onMounted } from 'vue'
+import { Star, CheckSquare, Square, Loader2 } from 'lucide-vue-next'
+import { toast } from 'vue3-toastify'
 import BaseInput from '@/components/base/BaseInput.vue'
 import BaseButton from '@/components/base/BaseButton.vue'
 import UserAvatarUpload from '@/components/profile/UserAvatarUpload.vue'
+import api from '@/utils/api'
+import { useAuthStore } from '@/stores/auth'
+import { getErrorMessage } from '@/utils/errorHandler'
+import type { User } from '@/types'
 
-const userRole = ref<'passageiro' | 'motorista'>('passageiro')
+import defaultAvatarImg from '@/assets/images/profile.png'
+
+const avatarUploadRef = ref<InstanceType<typeof UserAvatarUpload> | null>(null)
+const authStore = useAuthStore()
+const isLoading = ref(false)
+const isSaving = ref(false)
 const activeTab = ref<'dados' | 'configuracoes'>('dados')
 
-// Dados do Usuário
-const nomeCompleto = ref('João Silva')
-const email = ref('joao.silva@alu.ufc.br')
-const fotoPerfil = ref<string>("https://static.vecteezy.com/system/resources/thumbnails/009/292/244/small/default-avatar-icon-of-social-media-user-vector.jpg")
+const form = ref<User>({
+  id: 0,
+  name: '',
+  email: '',
+  phone: '',
+  role: 'passageiro',
+  avatar: '',
+  rating: 0,
+  showPhone: false,
+  emailNotifications: false
+})
 
-// Estatísticas
-const avaliacao = ref(4.8)
-const totalCaronas = ref(15)
+const totalCaronas = ref(0)
 
-// Configurações de privacidade
-const mostrarTelefone = ref(true)
-const receberNotificacoes = ref(true)
+const fetchProfile = async () => {
+  try {
+    isLoading.value = true
+    const response = await api.get('/users/me')
+    const userData = response.data
 
-// Upload de Foto
-const handleImageUpdate = (file: File) => {
-  console.log('Enviando foto...', file)
-  // await api.uploadAvatar(file)
+    if (!userData.avatar) {
+      userData.avatar = defaultAvatarImg
+    }
+
+    authStore.updateUser(userData)
+
+    form.value = { ...userData }
+  }
+  catch (error) {
+    console.error('Erro ao carregar perfil:', error)
+    toast.error(getErrorMessage(error, 'Não foi possível carregar seus dados.'))
+  }
+  finally {
+    isLoading.value = false
+  }
 }
 
-// Salvar Dados Pessoais
-const updateProfileData = () => {
-  console.log('Atualizando perfil...', {
-    nome: nomeCompleto.value,
-  })
+const updateProfileData = async () => {
+  try {
+    isSaving.value = true
+
+    const response = await api.put('/users/', {
+      name: form.value.name,
+      phone: form.value.phone
+    })
+
+    if (response.data.user) {
+      authStore.updateUser(response.data.user)
+    } else {
+      authStore.updateUser({ name: form.value.name, phone: form.value.phone })
+    }
+
+    toast.success('Dados atualizados com sucesso!')
+  }
+  catch (error) {
+    console.error('Erro ao atualizar:', error)
+    toast.error(getErrorMessage(error, 'Erro ao salvar alterações.'))
+  }
+  finally {
+    isSaving.value = false
+  }
 }
 
-// Atualizar Configurações (Auto-save)
-const togglePrivacy = (field: 'telefone' | 'notificacoes') => {
-  if (field === 'telefone') mostrarTelefone.value = !mostrarTelefone.value
-  if (field === 'notificacoes') receberNotificacoes.value = !receberNotificacoes.value
+const togglePrivacy = async (field: 'showPhone' | 'emailNotifications') => {
+  const previousState = form.value[field]
 
-  console.log('Salvando preferência...', field)
+  try {
+    form.value[field] = !previousState
+
+    await api.put('/users/', { [field]: form.value[field] })
+
+    authStore.updateUser({ [field]: form.value[field] })
+  }
+  catch (error) {
+    form.value[field] = previousState
+    console.error('Erro ao salvar configuração:', error)
+    toast.error(getErrorMessage(error, 'Não foi possível salvar a configuração.'))
+  }
 }
 
+const handleImageUpdate = async (file: File) => {
+  let idToast: any = null
+
+  try {
+    const formData = new FormData()
+    formData.append('avatar', file)
+
+    idToast = toast.loading("Enviando imagem...", { transition: 'slide' })
+
+    const response = await api.patch('/users/avatar', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    })
+
+    const newAvatarUrl = response.data.user.avatar
+
+    form.value.avatar = newAvatarUrl
+    authStore.updateUser({ avatar: newAvatarUrl })
+
+    toast.update(idToast, {
+      render: "Foto de perfil atualizada!",
+      type: "success",
+      isLoading: false,
+      autoClose: 3000,
+      transition: 'slide'
+    })
+
+  } catch (error) {
+    console.error('Erro no upload:', error)
+
+    if (avatarUploadRef.value) {
+      avatarUploadRef.value.resetPreview()
+    }
+
+    if (idToast) toast.remove(idToast)
+    toast.error(getErrorMessage(error, 'Falha ao enviar imagem. Verifique o tamanho ou formato.'))
+  }
+}
+
+const handleBecomeDriver = async () => {
+  if (!confirm('Deseja solicitar o cadastro como motorista?')) return
+
+  try {
+    isSaving.value = true
+    const response = await api.patch('/users/become-driver')
+
+    const { user: updatedUser, token: newToken } = response.data
+
+    form.value.role = updatedUser.role
+    authStore.updateUser({ role: updatedUser.role })
+
+    if (newToken) {
+      authStore.setToken(newToken)
+    }
+
+    toast.success(response.data.message)
+
+  }
+  catch (error) {
+    console.error(error)
+    toast.error(getErrorMessage(error, 'Erro ao processar solicitação.'))
+  }
+  finally {
+    isSaving.value = false
+  }
+}
+
+onMounted(() => {
+  fetchProfile()
+})
 </script>
 
 <template>
   <div class="space-y-6 h-[700px]">
 
-    <div>
-      <h1 class="text-3xl font-semibold text-gray-900">Meu Perfil</h1>
-      <p class="mt-2 text-gray-600">Gerencie suas informações e preferências</p>
+    <div class="flex items-center justify-between">
+      <div>
+        <h1 class="text-3xl font-semibold text-gray-900">Meu Perfil</h1>
+        <p class="mt-2 text-gray-600">Gerencie suas informações e preferências</p>
+      </div>
+      <div v-if="isLoading" class="text-blue-600">
+        <Loader2 class="animate-spin h-8 w-8" />
+      </div>
     </div>
 
-    <div class="grid grid-cols-1 gap-8 md:grid-cols-3">
+    <div v-if="!isLoading" class="grid grid-cols-1 gap-8 md:grid-cols-3">
 
       <aside class="md:col-span-1">
         <div class="rounded-lg border border-gray-200 bg-white p-6 text-center shadow-md h-full">
-
           <div class="mx-auto mb-4">
             <UserAvatarUpload
-              :src="fotoPerfil"
-              :alt="nomeCompleto"
+              ref="avatarUploadRef"
+              :src="authStore.user?.avatar || defaultAvatarImg"
+              :alt="authStore.user?.name"
               size="h-28 w-28"
               @update:image="handleImageUpdate"
             />
           </div>
 
-          <h2 class="mt-4 text-xl font-semibold text-gray-900">{{ nomeCompleto }}</h2>
+          <h2 class="mt-4 text-xl font-semibold text-gray-900">{{ authStore.user?.name }}</h2>
+          <p class="text-sm text-gray-500">{{ authStore.user?.email }}</p>
 
-          <p class="text-sm text-gray-500">{{ email }}</p>
-
-          <span
-            :class="[
-              'mt-2 inline-block rounded-full px-3 py-1 text-xs font-medium',
-              userRole === 'motorista' ? 'bg-gray-800 text-white' : 'bg-gray-200 text-gray-700'
-            ]"
-          >
-            {{ userRole === 'motorista' ? 'Motorista' : 'Passageiro' }}
+          <span :class="['mt-2 inline-block rounded-full px-3 py-1 text-xs font-medium', authStore.user?.role === 'motorista' ? 'bg-gray-800 text-white' : 'bg-blue-100 text-blue-700']">
+            {{ authStore.user?.role === 'motorista' ? 'Motorista' : 'Passageiro' }}
           </span>
 
           <div class="mt-6 border-t border-gray-100 pt-4 text-left">
             <div class="flex items-center justify-between text-sm">
               <span class="text-gray-600">Avaliação</span>
               <span class="flex items-center gap-1 font-medium text-gray-900">
-                <Star :size="16" class="fill-amber-400 text-amber-400" />
-                {{ avaliacao }}
+                <Star :size="16" class="fill-amber-400 text-amber-400" /> {{ authStore.user?.rating || 'N/A' }}
               </span>
             </div>
+
             <div class="mt-2 flex items-center justify-between text-sm">
-              <span class="text-gray-600">Caronas realizadas</span>
+              <span class="text-gray-600">Total de caronas</span>
               <span class="font-medium text-gray-900">{{ totalCaronas }}</span>
             </div>
           </div>
@@ -97,27 +221,15 @@ const togglePrivacy = (field: 'telefone' | 'notificacoes') => {
 
       <main class="md:col-span-2">
         <div class="mb-6 flex space-x-1 rounded-lg bg-gray-100 p-1">
-          <button
-            @click="activeTab = 'dados'"
-            :class="[
-              'w-full rounded-md px-3 py-2 text-center text-sm font-medium transition-colors',
-              activeTab === 'dados' ? 'bg-white shadow' : 'text-gray-600 hover:bg-gray-200'
-            ]"
-          >
+          <button @click="activeTab = 'dados'" :class="['w-full rounded-md px-3 py-2 text-center text-sm font-medium transition-colors', activeTab === 'dados' ? 'bg-white shadow' : 'text-gray-600 hover:bg-gray-200']">
             Dados
           </button>
-          <button
-            @click="activeTab = 'configuracoes'"
-            :class="[
-              'w-full rounded-md px-3 py-2 text-center text-sm font-medium transition-colors',
-              activeTab === 'configuracoes' ? 'bg-white shadow' : 'text-gray-600 hover:bg-gray-200'
-            ]"
-          >
+          <button @click="activeTab = 'configuracoes'" :class="['w-full rounded-md px-3 py-2 text-center text-sm font-medium transition-colors', activeTab === 'configuracoes' ? 'bg-white shadow' : 'text-gray-600 hover:bg-gray-200']">
             Configurações
           </button>
         </div>
 
-        <div class="w-[500px]">
+        <div class="w-full md:w-[500px]">
 
           <div v-if="activeTab === 'dados'" class="rounded-lg border border-gray-200 bg-white shadow-md">
             <div class="p-6">
@@ -127,15 +239,26 @@ const togglePrivacy = (field: 'telefone' | 'notificacoes') => {
 
             <form class="space-y-6 border-t border-gray-200 p-6" @submit.prevent="updateProfileData">
               <BaseInput
-                v-model="nomeCompleto"
+                v-model="form.name"
                 label="Nome Completo"
                 id="nomeCompleto"
                 type="text"
+                required
+              />
+
+              <BaseInput
+                v-model="form.phone"
+                label="Telefone / WhatsApp"
+                id="phone"
+                type="tel"
+                placeholder="(85) 99999-9999"
+                v-maska
+                data-maska="['(##) ####-####', '(##) #####-####']"
               />
 
               <div>
                 <BaseInput
-                  v-model="email"
+                  v-model="form.email"
                   id="email"
                   label="E-mail Institucional"
                   type="email"
@@ -145,8 +268,11 @@ const togglePrivacy = (field: 'telefone' | 'notificacoes') => {
               </div>
 
               <div class="text-right">
-                <BaseButton type="submit">
-                  Salvar Alterações
+                <BaseButton type="submit" :disabled="isSaving">
+                  <span v-if="isSaving" class="flex items-center gap-2">
+                    <Loader2 class="animate-spin h-4 w-4" /> Salvando...
+                  </span>
+                  <span v-else>Salvar Alterações</span>
                 </BaseButton>
               </div>
             </form>
@@ -160,17 +286,12 @@ const togglePrivacy = (field: 'telefone' | 'notificacoes') => {
 
             <div class="space-y-0 divide-y divide-gray-200 border-t border-gray-200">
 
-              <div v-if="userRole === 'passageiro'" class="p-6">
+              <div v-if="authStore.user?.role === 'passageiro'" class="p-6">
                 <div class="flex items-start gap-4">
                   <div class="flex-1">
                     <h3 class="text-base font-medium text-gray-900">Tornar-se Motorista</h3>
-                    <p class="mt-1 text-sm text-gray-600">
-                      Comece a oferecer caronas para a comunidade.
-                    </p>
-                    <p class="mt-2 text-sm text-gray-600">
-                      Para se tornar motorista, você precisa cadastrar pelo menos um veículo.
-                    </p>
-                    <BaseButton type="button" class="mt-4">
+                    <p class="mt-1 text-sm text-gray-600">Comece a oferecer caronas para a comunidade.</p>
+                    <BaseButton type="button" class="mt-4" variant="outline" @click="handleBecomeDriver" :disabled="isSaving">
                       Solicitar Cadastro como Motorista
                     </BaseButton>
                   </div>
@@ -179,22 +300,22 @@ const togglePrivacy = (field: 'telefone' | 'notificacoes') => {
 
               <div class="p-6">
                 <h3 class="text-base font-medium text-gray-900">Privacidade</h3>
-                <p class="mt-1 text-sm text-gray-600">Configure suas preferências de privacidade</p>
+                <p class="mt-1 text-sm text-gray-600">Configure suas preferências</p>
                 <div class="mt-4 space-y-4">
 
-                  <div @click="togglePrivacy('telefone')" class="flex cursor-pointer items-start gap-3 select-none">
-                    <component :is="mostrarTelefone ? CheckSquare : Square" :size="20" class="mt-0.5 text-blue-600" />
+                  <div @click="togglePrivacy('showPhone')" class="flex cursor-pointer items-start gap-3 select-none hover:bg-gray-50 p-2 rounded-md transition">
+                    <component :is="form.showPhone ? CheckSquare : Square" :size="20" :class="form.showPhone ? 'text-blue-600' : 'text-gray-400'" class="mt-0.5" />
                     <div>
                       <h4 class="font-medium text-gray-800">Mostrar telefone no perfil</h4>
-                      <p class="text-sm text-gray-600">Outros usuários poderão ver seu número.</p>
+                      <p class="text-sm text-gray-600">Outros usuários poderão ver seu número nas caronas.</p>
                     </div>
                   </div>
 
-                  <div @click="togglePrivacy('notificacoes')" class="flex cursor-pointer items-start gap-3 select-none">
-                    <component :is="receberNotificacoes ? CheckSquare : Square" :size="20" class="mt-0.5 text-blue-600" />
+                  <div @click="togglePrivacy('emailNotifications')" class="flex cursor-pointer items-start gap-3 select-none hover:bg-gray-50 p-2 rounded-md transition">
+                    <component :is="form.emailNotifications ? CheckSquare : Square" :size="20" :class="form.emailNotifications ? 'text-blue-600' : 'text-gray-400'" class="mt-0.5" />
                     <div>
                       <h4 class="font-medium text-gray-800">Receber notificações por e-mail</h4>
-                      <p class="text-sm text-gray-600">Sobre novas caronas e solicitações.</p>
+                      <p class="text-sm text-gray-600">Sobre novas caronas e atualizações de status.</p>
                     </div>
                   </div>
 

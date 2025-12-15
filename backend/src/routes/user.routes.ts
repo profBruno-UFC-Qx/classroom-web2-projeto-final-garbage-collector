@@ -5,37 +5,35 @@ import { ensureAuthenticated } from "../middlewares/ensureAuthenticated";
 import { validate, validateFile } from "../middlewares/validateResource"; 
 import { updateUserSchema, avatarFileSchema } from "../schemas/user.schema";
 
-const userRoutes = Router();
+const router = Router();
 
 const upload = multer({ 
   storage: multer.memoryStorage()
 });
 
-userRoutes.get(
+router.use(ensureAuthenticated);
+
+router.get(
   "/me", 
-  ensureAuthenticated, 
   UserController.me
 );
 
-userRoutes.put(
-  "/", 
-  ensureAuthenticated, 
+router.put(
+  "/",  
   validate(updateUserSchema), 
   UserController.update
 );
 
-userRoutes.patch(
-  "/become-driver", 
-  ensureAuthenticated, 
+router.patch(
+  "/become-driver",  
   UserController.becomeDriver
 );
 
-userRoutes.patch(
-  "/avatar", 
-  ensureAuthenticated, 
+router.patch(
+  "/avatar",  
   upload.single("avatar"), 
   validateFile(avatarFileSchema),
   UserController.updateAvatar
 );
 
-export default userRoutes;
+export default router;

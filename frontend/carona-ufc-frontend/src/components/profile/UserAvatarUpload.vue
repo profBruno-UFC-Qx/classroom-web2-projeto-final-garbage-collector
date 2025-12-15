@@ -28,6 +28,17 @@ const triggerFileInput = () => {
   fileInput.value?.click()
 }
 
+const resetPreview = () => {
+  previewUrl.value = null
+  if (fileInput.value) {
+    fileInput.value.value = ''
+  }
+}
+
+defineExpose({
+  resetPreview
+})
+
 const onFileChange = (event: Event) => {
   const input = event.target as HTMLInputElement
   if (input.files && input.files[0]) {
