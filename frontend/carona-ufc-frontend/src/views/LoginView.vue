@@ -18,7 +18,7 @@ const handleLogin = async () => {
 
   try {
     await authStore.login(email.value, password.value)
-    toast.success('Bem-vindo de volta!')
+    toast.success('Bem-vindo!')
     router.push('/buscar-carona')
   }
   catch (error: any) {

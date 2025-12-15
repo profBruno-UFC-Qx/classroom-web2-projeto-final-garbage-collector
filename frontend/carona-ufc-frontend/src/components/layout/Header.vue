@@ -41,6 +41,15 @@ const handleLogout = () => {
 
         <RouterLink
           v-if="authStore.user?.role === 'motorista'"
+          to="/meus-veiculos"
+          class="text-sm font-medium text-gray-600 transition-colors hover:text-gray-900"
+          active-class="text-gray-900 font-semibold"
+        >
+          Veículos
+        </RouterLink>
+
+        <RouterLink
+          v-if="authStore.user?.role === 'motorista'"
           to="/oferecer-carona"
           class="text-sm font-medium text-gray-600 transition-colors hover:text-gray-900"
           active-class="text-gray-900 font-semibold"
