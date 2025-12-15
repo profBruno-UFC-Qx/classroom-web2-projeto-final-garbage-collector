@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import { RouterLink } from 'vue-router'
 import { ShieldCheck, Users, MapPin, CircleDollarSign, ArrowRight } from 'lucide-vue-next'
+import { useAuthStore } from '@/stores/auth'
+
+const authStore = useAuthStore()
 </script>
 
 <template>
@@ -14,19 +17,33 @@ import { ShieldCheck, Users, MapPin, CircleDollarSign, ArrowRight } from 'lucide
         <p class="mb-8 text-lg leading-relaxed text-gray-600">
           Sistema de caronas solidárias exclusivo para a comunidade acadêmica da UFC. Conecte-se com colegas, economize dinheiro e contribua para um campus mais sustentável.
         </p>
+
         <div class="flex gap-4 justify-center md:justify-start">
-          <RouterLink
-            to="/cadastro"
-            class="inline-flex items-center gap-2 rounded-md bg-gray-900 px-6 py-3 font-medium text-white transition-colors duration-200 hover:bg-gray-700"
-          >
-            Começar agora <ArrowRight :size="16" />
-          </RouterLink>
-          <RouterLink
-            to="/login"
-            class="inline-flex items-center gap-2 rounded-md border border-gray-300 bg-white px-6 py-3 font-medium text-gray-700 transition-colors duration-200 hover:bg-gray-50"
-          >
-            Já tenho conta
-          </RouterLink>
+
+          <template v-if="!authStore.isAuthenticated">
+            <RouterLink
+              to="/cadastro"
+              class="inline-flex items-center gap-2 rounded-md bg-gray-900 px-6 py-3 font-medium text-white transition-colors duration-200 hover:bg-gray-700"
+            >
+              Começar agora <ArrowRight :size="16" />
+            </RouterLink>
+            <RouterLink
+              to="/login"
+              class="inline-flex items-center gap-2 rounded-md border border-gray-300 bg-white px-6 py-3 font-medium text-gray-700 transition-colors duration-200 hover:bg-gray-50"
+            >
+              Já tenho conta
+            </RouterLink>
+          </template>
+
+          <template v-else>
+             <RouterLink
+              to="/buscar-carona"
+              class="inline-flex items-center gap-2 rounded-md bg-gray-900 px-6 py-3 font-medium text-white transition-colors duration-200 hover:bg-gray-700"
+            >
+              Buscar Carona <ArrowRight :size="16" />
+            </RouterLink>
+          </template>
+
         </div>
       </div>
 
