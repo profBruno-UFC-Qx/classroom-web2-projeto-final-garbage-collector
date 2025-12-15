@@ -10,11 +10,11 @@ export interface Carona {
 }
 
 export interface Veiculo {
-  id: number
-  marca: string
-  modelo: string
-  cor: string
-  placa: string
+  id: number;
+  brand: string;
+  model: string;
+  color: string;
+  plate: string;
 }
 
 export interface User {
@@ -27,4 +27,24 @@ export interface User {
   rating: number;
   showPhone: boolean;
   emailNotifications: boolean;
+}
+
+export interface CreateRidePayload {
+  origin: string;
+  destination: string;
+  date: string;
+  time: string;
+  seats: number;
+  vehicleId: number;
+  observation?: string;
+}
+
+export interface RideForm {
+  origin: string
+  destination: string
+  date: string
+  time: string
+  seats: number
+  vehicleId: number | ''
+  observation: string
 }

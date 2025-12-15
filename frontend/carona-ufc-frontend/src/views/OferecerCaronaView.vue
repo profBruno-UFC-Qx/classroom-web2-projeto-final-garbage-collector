@@ -1,47 +1,70 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
-import { MapPin, Calendar, Clock, Car, Users, FileText, AlertCircle } from 'lucide-vue-next'
+import { toast } from 'vue3-toastify'
+import { MapPin, Calendar, Clock, Car, Users, FileText, AlertCircle, Loader2 } from 'lucide-vue-next'
 import { useVehicleStore } from '@/stores/vehicle'
 import { useRideStore } from '@/stores/ride'
 import BaseInput from '@/components/base/BaseInput.vue'
 import BaseButton from '@/components/base/BaseButton.vue'
+import { getErrorMessage } from '@/utils/errorHandler'
+import type { RideForm } from '@/types'
 
 const router = useRouter()
 const vehicleStore = useVehicleStore()
 const rideStore = useRideStore()
 
-const form = ref({
+const form = ref<RideForm>({
   origin: '',
   destination: '',
   date: '',
   time: '',
   seats: 3,
-  vehicleId: '' as string | number,
+  vehicleId: '',
   observation: ''
-})
-
-onMounted(async () => {
-  await vehicleStore.fetchVehicles()
-  if (vehicleStore.vehicles.length > 0) {
-    form.value.vehicleId = vehicleStore.vehicles[0]?.id ?? ''
-  }
 })
 
 const hasVehicles = computed(() => vehicleStore.vehicles.length > 0)
 
-const handleSubmit = async () => {
-  if (!form.value.vehicleId) return
+onMounted(async () => {
+  try {
+    await vehicleStore.fetchVehicles()
 
-  await rideStore.createRide({
-    origin: form.value.origin,
-    destination: form.value.destination,
-    date: form.value.date,
-    time: form.value.time,
-    seats: Number(form.value.seats),
-    vehicleId: Number(form.value.vehicleId),
-    observation: form.value.observation
-  })
+    if (vehicleStore.vehicles.length > 0) {
+      form.value.vehicleId = vehicleStore.vehicles[0]?.id ?? ''
+    }
+  } catch (error) {
+    console.error('Erro ao buscar veículos:', error)
+    toast.error('Não foi possível carregar seus veículos.')
+  }
+})
+
+const handleSubmit = async () => {
+  if (!form.value.vehicleId) {
+    toast.warn('Por favor, selecione um veículo.')
+    return
+  }
+
+  try {
+    await rideStore.createRide({
+      origin: form.value.origin,
+      destination: form.value.destination,
+      date: form.value.date,
+      time: form.value.time,
+      seats: Number(form.value.seats),
+      vehicleId: Number(form.value.vehicleId),
+      observation: form.value.observation
+    })
+
+    toast.success('Carona publicada com sucesso!')
+
+    router.push('/minhas-caronas')
+
+  }
+  catch (error) {
+    console.error('Erro ao criar carona:', error)
+    toast.error(getErrorMessage(error, 'Erro ao publicar carona.'))
+  }
 }
 </script>
 
@@ -53,8 +76,9 @@ const handleSubmit = async () => {
       <p class="mt-1 text-sm text-gray-600">Preencha os dados da viagem e compartilhe seu trajeto.</p>
     </div>
 
-    <div v-if="vehicleStore.isLoading" class="py-10 text-center text-gray-500">
-      Carregando seus veículos...
+    <div v-if="vehicleStore.isLoading" class="flex flex-col items-center justify-center py-10 text-gray-500">
+      <Loader2 class="mb-2 h-8 w-8 animate-spin text-blue-600" />
+      <p>Carregando seus veículos...</p>
     </div>
 
     <div v-else-if="!hasVehicles" class="rounded-lg border border-yellow-200 bg-yellow-50 p-6 text-center">
@@ -84,6 +108,7 @@ const handleSubmit = async () => {
               class="block w-full rounded-md border border-gray-300 py-2 pl-10 pr-3 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white"
               required
             >
+              <option disabled value="">Selecione um veículo</option>
               <option
                 v-for="v in vehicleStore.vehicles"
                 :key="v.id"
@@ -124,6 +149,7 @@ const handleSubmit = async () => {
             type="date"
             label="Data"
             required
+            :min="new Date().toISOString().split('T')[0]"
           >
             <template #icon><Calendar :size="20" /></template>
           </BaseInput>
@@ -168,7 +194,10 @@ const handleSubmit = async () => {
             class="w-full justify-center"
             :disabled="rideStore.isLoading"
           >
-            {{ rideStore.isLoading ? 'Criando carona...' : 'Publicar Carona' }}
+            <span v-if="rideStore.isLoading" class="flex items-center gap-2">
+               <Loader2 class="animate-spin h-4 w-4" /> Criando...
+            </span>
+            <span v-else>Publicar Carona</span>
           </BaseButton>
         </div>
 
