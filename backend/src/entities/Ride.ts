@@ -1,6 +1,7 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, CreateDateColumn, JoinColumn } from "typeorm";
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, CreateDateColumn, JoinColumn, OneToMany } from "typeorm";
 import { User } from "./User";
 import { Vehicle } from "./Vehicle";
+import { RideRequest } from "./RideRequest";
 
 @Entity()
 export class Ride {
@@ -41,6 +42,9 @@ export class Ride {
 
   @Column({ default: 'open' })
   status!: string;
+
+  @OneToMany(() => RideRequest, (request) => request.ride)
+  requests!: RideRequest[];
 
   @CreateDateColumn()
   createdAt!: Date;

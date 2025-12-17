@@ -9,11 +9,29 @@ const router = Router();
 
 router.use(ensureAuthenticated);
 
+router.get("/", RideController.list); 
+router.get("/me", RideController.myRides); 
+router.get("/:id", RideController.getById); 
+
+router.post("/:id/request", RideController.requestSeat); 
+
 router.post(
   "/", 
   ensureRole(["motorista"]), 
   validate(createRideSchema), 
   RideController.create
+);
+
+router.patch(
+  "/:id/cancel",
+  ensureRole(["motorista"]),
+  RideController.cancel
+);
+
+router.patch(
+  "/requests/:requestId/handle",
+  ensureRole(["motorista"]),
+  RideController.handleRequest
 );
 
 export default router;
