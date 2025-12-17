@@ -27,7 +27,7 @@ const handleSearch = (e: Event) => {
       <h1 class="text-3xl font-bold text-gray-900">
         Buscar Caronas
       </h1>
-      <p class="mt-1 text-base text-gray-600">
+      <p class="mt-2 text-base text-gray-600">
         Encontre caronas disponíveis para seu destino
       </p>
     </div>

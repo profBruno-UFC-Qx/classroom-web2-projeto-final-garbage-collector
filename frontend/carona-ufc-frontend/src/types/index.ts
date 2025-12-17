@@ -1,14 +1,3 @@
-export interface Carona {
-  id: number
-  origem: string
-  destino: string
-  data: string
-  horario: string
-  motorista: string
-  valor: number
-  papel?: 'motorista' | 'passageiro' | 'viewer'
-}
-
 export interface Veiculo {
   id: number;
   brand: string;
@@ -47,4 +36,34 @@ export interface RideForm {
   seats: number
   vehicleId: number | ''
   observation: string
+}
+
+export interface Passageiro {
+  id: number;
+  passengerId: number;
+  name: string;
+  avatar?: string;
+  status: 'pending' | 'approved' | 'rejected';
+}
+
+export interface Carona {
+  id: number;
+  origin: string;
+  destination: string;
+  date: string;
+  time: string;
+  seats: number;
+  status: string;
+  observation?: string;
+  driver: User;
+  vehicle: {
+    id: number;
+    brand: string;
+    model: string;
+    color: string;
+    plate: string;
+  };
+  passengers?: Passageiro[];
+  userRequestStatus?: 'pending' | 'approved' | 'rejected' | null;
+  papel?: 'motorista' | 'passageiro';
 }

@@ -1,9 +1,12 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
-import { Calendar, History, Car, Search } from 'lucide-vue-next'
+import { Calendar, History, Car, Search, Loader2 } from 'lucide-vue-next'
 import RideCard from '@/components/rides/RideCard.vue'
 import BaseButton from '@/components/base/BaseButton.vue'
 import { RouterLink } from 'vue-router'
+import { toast } from 'vue3-toastify'
+import api from '@/utils/api'
+import { getErrorMessage } from '@/utils/errorHandler'
 import type { Carona } from '@/types'
 
 const activeTab = ref<'agendadas' | 'historico'>('agendadas')
@@ -17,41 +20,38 @@ const hasHistory = computed(() => historicoCaronas.value.length > 0)
 
 const fetchMinhasCaronas = async () => {
   isLoading.value = true
+  try {
+    const response = await api.get<Carona[]>('/rides/me')
+    const todasCaronas = response.data
 
-  await new Promise(resolve => setTimeout(resolve, 1000))
+    const agora = new Date()
 
-  caronasAgendadas.value = [
-    {
-      id: 1,
-      origem: 'Quixadá - Campus',
-      destino: 'Fortaleza - Benfica',
-      data: '25/10/2025',
-      horario: '18:00',
-      motorista: 'Carlos Oliveira',
-      valor: 15.00,
-      papel: 'passageiro'
-    },
-    {
-      id: 2,
-      origem: 'Fortaleza - Rodoviária',
-      destino: 'Quixadá - Centro',
-      data: '28/10/2025',
-      horario: '06:00',
-      motorista: 'Você',
-      valor: 20.00,
-      papel: 'motorista'
-    }
-  ]
+    caronasAgendadas.value = []
+    historicoCaronas.value = []
 
-  historicoCaronas.value = []
+    todasCaronas.forEach(carona => {
+      const dataCarona = new Date(`${carona.date}T${carona.time}`)
 
-  isLoading.value = false
+      if (dataCarona >= agora && carona.status !== 'cancelled' && carona.status !== 'finished') {
+        caronasAgendadas.value.push(carona)
+      } else {
+        historicoCaronas.value.push(carona)
+      }
+    })
+
+  }
+  catch (error) {
+    console.error('Erro ao buscar caronas:', error)
+    toast.error(getErrorMessage(error, 'Não foi possível carregar suas viagens.'))
+  }
+  finally {
+    isLoading.value = false
+  }
 }
 
 onMounted(() => {
   fetchMinhasCaronas()
 })
-
 </script>
 
 <template>
@@ -97,13 +97,9 @@ onMounted(() => {
             ]"
           />
           <span>Agendadas</span>
-
           <span
             v-if="hasRidesAgendadas"
-            :class="[
-              'ml-3 hidden rounded-full py-0.5 px-2.5 text-xs font-medium md:inline-block',
-              activeTab === 'agendadas' ? 'bg-gray-100 text-gray-900' : 'bg-gray-100 text-gray-900'
-            ]"
+            class="ml-3 hidden rounded-full bg-gray-100 py-0.5 px-2.5 text-xs font-medium text-gray-900 md:inline-block"
           >
             {{ caronasAgendadas.length }}
           </span>
@@ -129,12 +125,12 @@ onMounted(() => {
       </nav>
     </div>
 
-    <div v-if="isLoading" class="py-12 text-center text-gray-500">
+    <div v-if="isLoading" class="flex flex-col items-center justify-center py-12 text-gray-500">
+      <Loader2 class="mb-2 h-8 w-8 animate-spin text-blue-600" />
       <p>Carregando suas caronas...</p>
     </div>
 
     <div v-else-if="activeTab === 'agendadas'">
-
       <div v-if="!hasRidesAgendadas" class="rounded-lg border-2 border-dashed border-gray-300 p-12 text-center">
         <Calendar :size="48" class="mx-auto text-gray-400" />
         <h3 class="mt-2 text-sm font-medium text-gray-900">Nenhuma carona agendada</h3>
@@ -149,7 +145,6 @@ onMounted(() => {
       </div>
 
       <div v-else class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-
         <div
           v-for="carona in caronasAgendadas"
           :key="carona.id"
@@ -167,7 +162,6 @@ onMounted(() => {
             :role="carona.papel"
           />
         </div>
-
       </div>
     </div>
 
@@ -180,9 +174,9 @@ onMounted(() => {
         </p>
       </div>
 
-      <div v-else class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+      <div v-else class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3 opacity-75 grayscale transition-all hover:opacity-100 hover:grayscale-0">
          <div v-for="carona in historicoCaronas" :key="carona.id">
-            <RideCard />
+            <RideCard :carona="carona" :role="carona.papel || 'viewer'" />
          </div>
       </div>
     </div>

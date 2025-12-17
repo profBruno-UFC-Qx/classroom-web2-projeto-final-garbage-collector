@@ -1,84 +1,129 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { toast } from 'vue3-toastify'
 import {
   MapPin, Calendar, Clock, Car, Star,
-  User, MessageCircle, CheckCircle
+  User, MessageCircle, CheckCircle, X, Check, Loader2, AlertCircle
 } from 'lucide-vue-next'
 import BaseButton from '@/components/base/BaseButton.vue'
+import api from '@/utils/api'
+import { getErrorMessage } from '@/utils/errorHandler'
+import { useAuthStore } from '@/stores/auth'
+import type { Carona } from '@/types'
 
 const route = useRoute()
 const router = useRouter()
+const authStore = useAuthStore()
 const caronaId = route.params.id
 
-const userStatus = ref<'viewer' | 'pending' | 'approved' | 'driver'>('driver')
-
 const isLoading = ref(true)
-const carona = ref<any>(null)
+const isActionLoading = ref(false)
+const carona = ref<Carona | null>(null)
+
+const isDriver = computed(() => {
+  return carona.value?.driver.id === authStore.user?.id
+})
+
+const passageirosAprovados = computed(() => {
+  return carona.value?.passengers?.filter(p => p.status === 'approved') || []
+})
+
+const solicitacoesPendentes = computed(() => {
+  if (!isDriver.value) return []
+  return carona.value?.passengers?.filter(p => p.status === 'pending') || []
+})
+
+const userStatus = computed(() => {
+  if (isDriver.value) return 'driver'
+  return carona.value?.userRequestStatus || 'viewer'
+})
+
+const vagasOcupadas = computed(() => passageirosAprovados.value.length)
+const vagasDisponiveis = computed(() => carona.value?.seats || 0)
+
+// Função para formatar data de YYYY-MM-DD para DD/MM/YYYY
+const formatarData = (data: string) => {
+  const [ano, mes, dia] = data.split('-')
+  return `${dia}/${mes}/${ano}`
+}
+
+const dataFormatada = computed(() => {
+  return carona.value?.date ? formatarData(carona.value.date) : ''
+})
 
 const fetchCaronaDetails = async () => {
-  isLoading.value = true
-
-  await new Promise(resolve => setTimeout(resolve, 800))
-
-  // Dados Mockados
-  carona.value = {
-    id: caronaId,
-    origem: 'Campus UFC - Quixadá',
-    destino: 'Fortaleza - Terminal Rodoviário',
-    data: '24/10/2025',
-    horario: '18:00',
-    observacoes: 'Ponto de encontro na parada de ônibus em frente ao bloco 1. Saio pontualmente.',
-    motorista: {
-      nome: 'Maria Santos',
-      avatar: '/images/profile.png',
-      avaliacao: 4.9,
-      caronasRealizadas: 42,
-      telefone: '(85) 99999-8888'
-    },
-    veiculo: {
-      modelo: 'Honda Civic',
-      cor: 'Prata',
-      placa: 'ABC-1234'
-    },
-    vagasTotais: 4,
-    passageiros: [
-      { id: 1, nome: 'João Silva', status: 'approved' },
-      { id: 2, nome: 'Ana Costa', status: 'approved' }
-    ]
+  try {
+    isLoading.value = true
+    const response = await api.get<Carona>(`/rides/${caronaId}`)
+    carona.value = response.data
   }
-  isLoading.value = false
+  catch (error) {
+    console.error(error)
+    toast.error(getErrorMessage(error, 'Erro ao carregar detalhes.'))
+    router.push('/buscar-carona')
+  }
+  finally {
+    isLoading.value = false
+  }
 }
 
-const vagasOcupadas = computed(() => carona.value?.passageiros.length || 0)
-const vagasRestantes = computed(() => (carona.value?.vagasTotais || 0) - vagasOcupadas.value)
-
-const handleSolicitar = () => {
-  userStatus.value = 'pending'
-  alert('Solicitação enviada! Aguarde a aprovação do motorista.')
+const handleSolicitar = async () => {
+  try {
+    isActionLoading.value = true
+    await api.post(`/rides/${caronaId}/request`)
+    toast.success('Solicitação enviada! Aguarde a aprovação.')
+    await fetchCaronaDetails()
+  }
+  catch (error) {
+    toast.error(getErrorMessage(error, 'Erro ao solicitar vaga.'))
+  }
+  finally {
+    isActionLoading.value = false
+  }
 }
 
-const handleCancelarSolicitacao = () => {
-  if(confirm('Deseja cancelar sua solicitação?')) {
-    userStatus.value = 'viewer'
+const handleGerenciarSolicitacao = async (requestId: number, action: 'accept' | 'reject') => {
+  try {
+    await api.patch(`/rides/requests/${requestId}/handle`, { action })
+
+    toast.success(action === 'accept' ? 'Passageiro aceito!' : 'Solicitação recusada.')
+
+    await fetchCaronaDetails()
+  }
+  catch (error) {
+    toast.error(getErrorMessage(error, 'Erro ao processar solicitação.'))
+  }
+}
+
+const handleCancelarCaronaDriver = async () => {
+  if(!confirm('ATENÇÃO: Cancelar a carona notificará todos os passageiros. Deseja continuar?')) return
+
+  try {
+    isActionLoading.value = true
+    await api.patch(`/rides/${caronaId}/cancel`)
+    toast.success('Carona cancelada com sucesso.')
+    router.push('/minhas-caronas')
+  }
+  catch (error) {
+    toast.error(getErrorMessage(error, 'Erro ao cancelar carona.'))
+  }
+  finally {
+    isActionLoading.value = false
   }
 }
 
 const handleSairCarona = () => {
-  if(confirm('Tem certeza que deseja desistir desta carona?')) {
-    userStatus.value = 'viewer'
-  }
-}
-
-const handleCancelarCaronaDriver = () => {
-  if(confirm('ATENÇÃO: Cancelar a carona notificará todos os passageiros. Deseja continuar?')) {
-    alert('Carona cancelada.')
-    router.push('/minhas-caronas')
-  }
+  toast.info('Funcionalidade em desenvolvimento.')
 }
 
 const openWhatsApp = () => {
-  window.open(`https://wa.me/55${carona.value.motorista.telefone.replace(/\D/g, '')}`, '_blank')
+  if (carona.value?.driver.phone) {
+    const phone = carona.value.driver.phone.replace(/\D/g, '')
+    window.open(`https://wa.me/55${phone}`, '_blank')
+  } else {
+    toast.warn('Motorista não cadastrou telefone.')
+  }
 }
 
 onMounted(() => {
@@ -87,13 +132,14 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="mx-auto max-w-3xl space-y-6">
+  <div class="mx-auto w-[700px] space-y-6 pb-12">
 
-    <div v-if="isLoading" class="py-20 text-center text-gray-500">
-      Carregando detalhes da viagem...
+    <div v-if="isLoading" class="flex flex-col items-center justify-center py-20 text-gray-500">
+      <Loader2 class="mb-2 h-10 w-10 animate-spin text-blue-600" />
+      <p>Carregando detalhes da viagem...</p>
     </div>
 
-    <div v-else class="space-y-6">
+    <div v-else-if="carona" class="space-y-6">
 
       <div v-if="userStatus === 'pending'" class="rounded-lg bg-yellow-50 p-4 text-yellow-800 border border-yellow-200 flex items-center gap-3">
         <Clock :size="20" />
@@ -105,12 +151,17 @@ onMounted(() => {
         <p class="text-sm font-medium">Você está confirmado nesta carona!</p>
       </div>
 
-      <div class="overflow-hidden rounded-lg bg-white shadow-sm border border-gray-200">
-        <div class="relative h-48 w-full bg-gray-200 flex items-center justify-center">
-          <MapPin :size="48" class="text-gray-400 opacity-50" />
-          <span class="absolute mt-16 text-xs text-gray-500 font-medium">Mapa do Trajeto (Google Maps)</span>
-        </div>
+      <div v-if="userStatus === 'rejected'" class="rounded-lg bg-red-50 p-4 text-red-800 border border-red-200 flex items-center gap-3">
+        <X :size="20" />
+        <p class="text-sm font-medium">Sua solicitação foi recusada pelo motorista.</p>
+      </div>
 
+      <div v-if="carona.status === 'cancelled'" class="rounded-lg bg-red-100 p-4 text-red-900 border border-red-300 flex items-center gap-3">
+        <AlertCircle :size="20" />
+        <p class="text-sm font-bold">Esta carona foi cancelada pelo motorista.</p>
+      </div>
+
+      <div class="overflow-hidden rounded-lg bg-white shadow-sm border border-gray-200">
         <div class="p-6">
           <div class="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
             <div class="flex-1 space-y-6">
@@ -118,17 +169,17 @@ onMounted(() => {
                 <div class="flex flex-col items-center pt-1">
                   <div class="h-3 w-3 rounded-full bg-blue-600 ring-4 ring-blue-50"></div>
                   <div class="h-full w-0.5 bg-gray-200 my-1"></div>
-                  <div class="h-3 w-3 rounded-full bg-gray-900 ring-4 ring-gray-100"></div>
+                  <MapPin :size="18" class="text-indigo-600 fill-indigo-100" />
                 </div>
 
                 <div class="flex flex-col justify-between gap-6 pb-1">
                   <div>
                     <p class="text-xs text-gray-500 font-medium uppercase">Origem</p>
-                    <p class="text-lg font-semibold text-gray-900">{{ carona.origem }}</p>
+                    <p class="text-lg font-semibold text-gray-900">{{ carona.origin }}</p>
                   </div>
                   <div>
                     <p class="text-xs text-gray-500 font-medium uppercase">Destino</p>
-                    <p class="text-lg font-semibold text-gray-900">{{ carona.destino }}</p>
+                    <p class="text-lg font-semibold text-gray-900">{{ carona.destination }}</p>
                   </div>
                 </div>
               </div>
@@ -140,23 +191,60 @@ onMounted(() => {
                   <Calendar :size="16" />
                   <span class="text-xs font-medium uppercase">Data</span>
                 </div>
-                <p class="text-lg font-semibold text-gray-900">{{ carona.data }}</p>
+                <p class="text-lg font-semibold text-gray-900">{{ dataFormatada }}</p>
               </div>
               <div>
                 <div class="flex items-center gap-2 text-gray-500 mb-1">
                   <Clock :size="16" />
                   <span class="text-xs font-medium uppercase">Horário</span>
                 </div>
-                <p class="text-lg font-semibold text-gray-900">{{ carona.horario }}</p>
+                <p class="text-lg font-semibold text-gray-900">{{ carona.time }}</p>
               </div>
             </div>
           </div>
 
-          <div v-if="carona.observacoes" class="mt-6 rounded-md bg-gray-50 p-4">
+          <div v-if="carona.observation" class="mt-6 rounded-md bg-gray-50 p-4">
             <p class="text-sm text-gray-700">
-              <span class="font-semibold">Observações:</span> {{ carona.observacoes }}
+              <span class="font-semibold">Observações:</span> {{ carona.observation }}
             </p>
           </div>
+        </div>
+      </div>
+
+      <div v-if="isDriver && solicitacoesPendentes.length > 0" class="rounded-lg bg-blue-50 border border-blue-100 p-6">
+        <h3 class="flex items-center gap-2 text-lg font-semibold text-blue-900 mb-4">
+           <User :size="20" /> Solicitações Pendentes
+        </h3>
+        <div class="grid gap-4 md:grid-cols-2">
+            <div
+                v-for="req in solicitacoesPendentes"
+                :key="req.id"
+                class="flex items-center justify-between rounded-md bg-white p-3 shadow-sm"
+            >
+                <div class="flex items-center gap-3">
+                    <div class="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden">
+                        <img v-if="req.avatar" :src="req.avatar" class="h-full w-full object-cover" />
+                        <User v-else :size="20" class="text-gray-500" />
+                    </div>
+                    <span class="font-medium text-gray-900">{{ req.name }}</span>
+                </div>
+                <div class="flex gap-2">
+                    <button
+                        @click="handleGerenciarSolicitacao(req.id, 'reject')"
+                        class="p-2 rounded-full text-red-600 hover:bg-red-50 transition"
+                        title="Recusar"
+                    >
+                        <X :size="20" />
+                    </button>
+                    <button
+                        @click="handleGerenciarSolicitacao(req.id, 'accept')"
+                        class="p-2 rounded-full text-green-600 hover:bg-green-50 transition"
+                        title="Aceitar"
+                    >
+                        <Check :size="20" />
+                    </button>
+                </div>
+            </div>
         </div>
       </div>
 
@@ -166,22 +254,20 @@ onMounted(() => {
           <h3 class="text-sm font-medium text-gray-500 uppercase mb-4">Motorista</h3>
           <div class="flex items-start gap-4">
             <div class="h-14 w-14 overflow-hidden rounded-full bg-gray-100">
-              <img v-if="carona.motorista.avatar" :src="carona.motorista.avatar" alt="Motorista" class="h-full w-full object-cover">
+              <img v-if="carona.driver.avatar" :src="carona.driver.avatar" alt="Motorista" class="h-full w-full object-cover">
               <div v-else class="flex h-full w-full items-center justify-center text-gray-400">
                 <User :size="24" />
               </div>
             </div>
             <div>
-              <h4 class="text-lg font-semibold text-gray-900">{{ carona.motorista.nome }}</h4>
+              <h4 class="text-lg font-semibold text-gray-900">{{ carona.driver.name }}</h4>
               <div class="flex items-center gap-1 mt-1 text-sm text-amber-500">
                 <Star :size="16" class="fill-current" />
-                <span class="font-medium text-gray-900">{{ carona.motorista.avaliacao }}</span>
-                <span class="text-gray-400 mx-1">•</span>
-                <span class="text-gray-500">{{ carona.motorista.caronasRealizadas }} caronas</span>
+                <span class="font-medium text-gray-900">{{ carona.driver.rating?.toFixed(1) || 'N/A' }}</span>
               </div>
 
               <button
-                v-if="userStatus === 'approved'"
+                v-if="userStatus === 'approved' && !isDriver"
                 @click="openWhatsApp"
                 class="mt-3 inline-flex items-center gap-1.5 text-sm font-medium text-green-600 hover:text-green-700"
               >
@@ -199,10 +285,10 @@ onMounted(() => {
               <Car :size="28" />
             </div>
             <div>
-              <h4 class="text-lg font-semibold text-gray-900">{{ carona.veiculo.modelo }}</h4>
-              <p class="text-sm text-gray-600">{{ carona.veiculo.cor }}</p>
+              <h4 class="text-lg font-semibold text-gray-900">{{ carona.vehicle.model }}</h4>
+              <p class="text-sm text-gray-600">{{ carona.vehicle.color }}</p>
               <p class="mt-1 inline-block rounded bg-gray-100 px-2 py-0.5 text-xs font-mono font-medium text-gray-700 border border-gray-200">
-                {{ carona.veiculo.placa }}
+                {{ carona.vehicle.plate }}
               </p>
             </div>
           </div>
@@ -211,26 +297,30 @@ onMounted(() => {
 
       <div class="rounded-lg bg-white p-6 shadow-sm border border-gray-200">
         <div class="mb-6 flex items-center justify-between">
-          <h3 class="text-lg font-semibold text-gray-900">Passageiros</h3>
-          <span class="rounded-full bg-blue-100 px-3 py-1 text-xs font-bold text-blue-700">
-            {{ vagasRestantes }} vagas restantes
+          <h3 class="text-lg font-semibold text-gray-900">Passageiros Confirmados</h3>
+          <span
+            class="rounded-full px-3 py-1 text-xs font-bold"
+            :class="vagasDisponiveis > 0 ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-600'"
+          >
+            {{ vagasDisponiveis }} vaga(s) restantes
           </span>
         </div>
 
         <div class="flex flex-wrap gap-4">
           <div
-            v-for="passageiro in carona.passageiros"
+            v-for="passageiro in passageirosAprovados"
             :key="passageiro.id"
             class="flex flex-col items-center gap-2"
           >
-            <div class="flex h-12 w-12 items-center justify-center rounded-full bg-gray-200 text-gray-500" title="Passageiro Confirmado">
-              <User :size="20" />
+            <div class="h-12 w-12 rounded-full bg-gray-200 overflow-hidden flex items-center justify-center">
+                <img v-if="passageiro.avatar" :src="passageiro.avatar" class="h-full w-full object-cover" />
+                <User v-else :size="20" class="text-gray-500" />
             </div>
-            <span class="text-xs font-medium text-gray-700">{{ passageiro.nome.split(' ')[0] }}</span>
+            <span class="text-xs font-medium text-gray-700">{{ passageiro.name.split(' ')[0] }}</span>
           </div>
 
           <div
-            v-for="i in vagasRestantes"
+            v-for="i in vagasDisponiveis"
             :key="`vaga-${i}`"
             class="flex flex-col items-center gap-2"
           >
@@ -244,11 +334,17 @@ onMounted(() => {
 
       <div class="flex flex-col gap-3 pt-4 sm:flex-row sm:justify-end">
 
-        <template v-if="userStatus === 'driver'">
+        <template v-if="isDriver">
           <BaseButton variant="secondary" @click="router.push('/minhas-caronas')">
             Voltar
           </BaseButton>
-          <BaseButton @click="handleCancelarCaronaDriver" class="bg-red-600 hover:bg-red-700 border-red-600 focus:ring-red-600">
+          <BaseButton
+             v-if="carona.status !== 'cancelled'"
+             @click="handleCancelarCaronaDriver"
+             class="bg-red-600 hover:bg-red-700 border-red-600 focus:ring-red-600"
+             :disabled="isActionLoading"
+           >
+            <Loader2 v-if="isActionLoading" class="animate-spin mr-2 h-4 w-4" />
             Cancelar Carona
           </BaseButton>
         </template>
@@ -258,15 +354,23 @@ onMounted(() => {
             Voltar
           </BaseButton>
 
-          <BaseButton v-if="userStatus === 'viewer'" @click="handleSolicitar" :disabled="vagasRestantes === 0">
-            {{ vagasRestantes > 0 ? 'Solicitar Vaga' : 'Carona Lotada' }}
+          <BaseButton
+             v-if="userStatus === 'viewer'"
+             @click="handleSolicitar"
+             :disabled="vagasDisponiveis === 0 || isActionLoading || carona.status === 'cancelled'"
+          >
+            <Loader2 v-if="isActionLoading" class="animate-spin mr-2 h-4 w-4" />
+            {{ vagasDisponiveis > 0 ? 'Solicitar Vaga' : 'Carona Lotada' }}
           </BaseButton>
 
-          <BaseButton v-if="userStatus === 'pending'" variant="secondary" @click="handleCancelarSolicitacao">
-            Cancelar Solicitação
+          <BaseButton v-if="userStatus === 'pending'" variant="secondary" disabled>
+             Aguardando Aprovação
           </BaseButton>
 
-          <BaseButton v-if="userStatus === 'approved'" variant="secondary" class="text-red-600 hover:bg-red-50 border-red-200" @click="handleSairCarona">
+          <BaseButton
+             v-if="userStatus === 'approved'"
+             @click="handleSairCarona"
+          >
             Sair da Carona
           </BaseButton>
         </template>
