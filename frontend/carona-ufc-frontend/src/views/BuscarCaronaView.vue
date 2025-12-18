@@ -1,95 +1,113 @@
 <script setup lang="ts">
-import { ref } from 'vue'
-import { Search } from 'lucide-vue-next'
+import { ref, onMounted } from 'vue'
+import { Search, Loader2, MapPin, Calendar } from 'lucide-vue-next'
+import { toast } from 'vue3-toastify'
+import { vMaska } from 'maska/vue'
 import BaseButton from '@/components/base/BaseButton.vue'
+import BaseInput from '@/components/base/BaseInput.vue'
 import RideCard from '@/components/rides/RideCard.vue'
+import api from '@/utils/api'
+import { getErrorMessage } from '@/utils/errorHandler'
+import { formatDateToISO } from '@/utils/dateHandler'
+import type { Carona } from '@/types'
 
-const origem = ref('')
-const destino = ref('')
-const data = ref('')
+const isLoading = ref(false)
+const caronas = ref<Carona[]>([])
+
+const filters = ref({
+  origin: '',
+  destination: '',
+  date: ''
+})
+
+const fetchRides = async () => {
+  isLoading.value = true
+  try {
+    const isoDate = formatDateToISO(filters.value.date)
+
+    const response = await api.get<Carona[]>('/rides', {
+      params: {
+        origin: filters.value.origin,
+        destination: filters.value.destination,
+        date: isoDate
+      }
+    })
+
+    caronas.value = response.data
+  }
+  catch (error) {
+    console.error(error)
+    toast.error(getErrorMessage(error, 'Erro ao buscar caronas.'))
+  }
+  finally {
+    isLoading.value = false
+  }
+}
 
 const handleSearch = (e: Event) => {
-  e.preventDefault()
-  // Implementar lógica de busca
-  console.log('Buscar caronas:', {
-    origem: origem.value,
-    destino: destino.value,
-    data: data.value,
-  })
+  fetchRides()
 }
+
+onMounted(() => {
+  fetchRides()
+})
 </script>
 
 <template>
   <div class="w-full">
 
-    <!-- Header Section -->
     <div class="mb-8">
       <h1 class="text-3xl font-bold text-gray-900">
         Buscar Caronas
       </h1>
       <p class="mt-2 text-base text-gray-600">
-        Encontre caronas disponíveis para seu destino
+        Encontre caronas disponíveis para seu destino.
       </p>
     </div>
 
-    <!-- Search Form -->
     <div class="mb-8 rounded-lg bg-white p-6 shadow-sm">
-      <form @submit="handleSearch" class="grid grid-cols-1 gap-4 lg:grid-cols-12 lg:items-end">
+      <form @submit.prevent="handleSearch" class="grid grid-cols-1 gap-4 lg:grid-cols-12 lg:items-end">
 
-        <!-- Origem -->
-        <div class="lg:col-span-3">
-          <label for="origem" class="mb-2 block text-sm font-medium text-gray-700">
-            Origem
-          </label>
-          <select
-            v-model="origem"
-            id="origem"
-            name="origem"
-            class="block w-full rounded-md border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 shadow-sm transition-colors focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+        <div class="lg:col-span-4">
+          <BaseInput
+            id="origin"
+            v-model="filters.origin"
+            label="Origem"
+            placeholder="Ex: Campus Quixadá"
           >
-            <option value="" disabled selected>Selecione...</option>
-            <option value="campus-qxd">Campus UFC - Quixadá</option>
-            <option value="centro-qxd">Centro - Quixadá</option>
-            <option value="rodoviaria-for">Fortaleza - Rodoviária</option>
-          </select>
+            <template #icon><MapPin :size="20" /></template>
+          </BaseInput>
         </div>
 
-        <!-- Destino -->
-        <div class="lg:col-span-3">
-          <label for="destino" class="mb-2 block text-sm font-medium text-gray-700">
-            Destino
-          </label>
-          <select
-            v-model="destino"
-            id="destino"
-            name="destino"
-            class="block w-full rounded-md border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 shadow-sm transition-colors focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+        <div class="lg:col-span-4">
+          <BaseInput
+            id="destination"
+            v-model="filters.destination"
+            label="Destino"
+            placeholder="Ex: Rodoviária Fortaleza"
           >
-            <option value="" disabled selected>Selecione...</option>
-            <option value="campus-qxd">Campus UFC - Quixadá</option>
-            <option value="centro-qxd">Centro - Quixadá</option>
-            <option value="rodoviaria-for">Fortaleza - Rodoviária</option>
-          </select>
+            <template #icon><MapPin :size="20" /></template>
+          </BaseInput>
         </div>
 
-        <!-- Data -->
-        <div class="lg:col-span-3">
-          <label for="data" class="mb-2 block text-sm font-medium text-gray-700">
-            Data
-          </label>
-          <input
-            v-model="data"
-            type="date"
-            id="data"
-            name="data"
-            class="block w-full rounded-md border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 shadow-sm transition-colors focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+        <div class="lg:col-span-2">
+           <BaseInput
+            id="date"
+            type="text"
+            v-model="filters.date"
+            label="Data"
+            placeholder="DD/MM/AAAA"
+            v-maska
+            data-maska="##/##/####"
           >
+            <template #icon><Calendar :size="20" /></template>
+          </BaseInput>
         </div>
 
-        <!-- Botão Buscar -->
-        <div class="lg:col-span-3">
-          <BaseButton type="submit">
-            <Search :size="18" />
+        <div class="lg:col-span-2">
+          <BaseButton type="submit" :disabled="isLoading" class="w-full justify-center">
+            <Loader2 v-if="isLoading" class="animate-spin mr-2 h-5 w-5" />
+            <Search v-else :size="18" class="mr-2" />
             Buscar
           </BaseButton>
         </div>
@@ -97,22 +115,40 @@ const handleSearch = (e: Event) => {
       </form>
     </div>
 
-    <!-- Results Section -->
     <div>
 
-      <!-- Results Header -->
-      <div class="mb-6">
+      <div class="mb-6 flex items-center justify-between">
         <p class="text-base text-gray-600">
-          4 carona(s) disponível(is)
+          <span v-if="isLoading">Buscando...</span>
+          <span v-else>
+             {{ caronas.length }} {{ caronas.length === 1 ? 'carona encontrada' : 'caronas encontradas' }}
+          </span>
         </p>
       </div>
 
-      <!-- Ride Cards Grid -->
-      <div class="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
-        <RideCard />
-        <RideCard />
-        <RideCard />
-        <RideCard />
+      <div v-if="isLoading" class="flex flex-col items-center justify-center py-20 text-gray-500">
+        <Loader2 class="mb-2 h-10 w-10 animate-spin text-blue-600" />
+        <p>Procurando motoristas...</p>
+      </div>
+
+      <div v-else-if="caronas.length === 0" class="rounded-lg border-2 border-dashed border-gray-300 p-12 text-center">
+        <Search :size="48" class="mx-auto text-gray-400 mb-4" />
+        <h3 class="text-lg font-medium text-gray-900">Nenhuma carona encontrada</h3>
+        <p class="mt-1 text-sm text-gray-500">
+          Tente ajustar os filtros ou busque por outra data.
+        </p>
+        <button
+            @click="filters = { origin: '', destination: '', date: '' }; fetchRides()"
+            class="mt-4 text-sm font-medium text-blue-600 hover:underline"
+        >
+            Limpar filtros e ver todas
+        </button>
+      </div>
+
+      <div v-else class="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
+        <div v-for="carona in caronas" :key="carona.id">
+            <RideCard :carona="carona" role="viewer" />
+        </div>
       </div>
 
     </div>

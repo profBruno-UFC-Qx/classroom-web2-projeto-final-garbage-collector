@@ -5,7 +5,13 @@ import { Vehicle } from "../entities/Vehicle";
 import { User } from "../entities/User";
 import { CreateRideInput } from "../schemas/ride.schema";
 import { AppError } from "../errors/AppError";
-import { Like, MoreThanOrEqual } from "typeorm";
+import { Like, Not } from "typeorm";
+
+interface RideFilters {
+  origin?: string;
+  destination?: string;
+  date?: string;
+}
 
 const rideRepo = AppDataSource.getRepository(Ride);
 const requestRepo = AppDataSource.getRepository(RideRequest);
@@ -40,11 +46,25 @@ export class RideService {
     return ride;
   }
 
-  static async list(search?: string) {
-    const whereCondition: any = { status: 'open' };
+  static async list(filters: RideFilters, currentUserId?: number) {
+    const whereCondition: any = { 
+        status: 'open',
+    };
     
-    if (search) {
-      whereCondition.destination = Like(`%${search}%`);
+    if (currentUserId) {
+        whereCondition.driverId = Not(currentUserId);
+    }
+
+    if (filters.origin) {
+      whereCondition.origin = Like(`%${filters.origin}%`);
+    }
+
+    if (filters.destination) {
+      whereCondition.destination = Like(`%${filters.destination}%`);
+    }
+
+    if (filters.date) {
+      whereCondition.date = filters.date;
     }
 
     const rides = await rideRepo.find({

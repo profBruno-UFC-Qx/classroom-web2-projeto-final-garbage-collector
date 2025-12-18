@@ -20,8 +20,14 @@ export class RideController {
   }
 
   static async list(req: Request, res: Response) {
-    const { search } = req.query;
-    const rides = await RideService.list(search as string);
+    const { origin, destination, date } = req.query;
+
+    const rides = await RideService.list({
+        origin: origin as string,
+        destination: destination as string,
+        date: date as string
+    }, req.user?.id); 
+
     return res.json(rides.map(r => toRideDTO(r, req.user?.id)));
   }
 
