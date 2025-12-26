@@ -82,6 +82,16 @@ const router = createRouter({
       component: () => import('../views/ProfileView.vue'),
       meta: { requiresAuth: true }
     },
+    // --- Rotas de ADMIN ---
+    {
+      path: "/admin",
+      name: 'admin-dashboard',
+      component: () => import('../views/AdminDashboardView.vue'),
+      meta: {
+        requiresAuth: true,
+        role: 'admin'
+      }
+    },
     // --- Rota para Acesso Não Autorizado ---
     {
       path: '/sem-permissao',
@@ -94,6 +104,15 @@ const router = createRouter({
 
 router.beforeEach((to, from, next) => {
   const authStore = useAuthStore()
+
+  if (authStore.isAuthenticated && authStore.user?.role === 'admin') {
+    if (to.path.startsWith('/admin')) {
+      return next()
+    }
+    else {
+      return next('/admin')
+    }
+  }
 
   if (to.meta.requiresAuth && !authStore.isAuthenticated) {
     next('/login')

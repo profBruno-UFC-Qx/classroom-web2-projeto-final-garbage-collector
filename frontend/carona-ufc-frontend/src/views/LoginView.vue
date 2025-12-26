@@ -18,8 +18,15 @@ const handleLogin = async () => {
 
   try {
     await authStore.login(email.value, password.value)
-    toast.success('Bem-vindo!')
-    router.push('/buscar-carona')
+
+    if (authStore.user?.role === 'admin') {
+      toast.success('Bem-vindo, Administrador!')
+      router.push('/admin')
+    }
+    else {
+      toast.success('Bem-vindo!')
+      router.push('/buscar-carona')
+    }
   }
   catch (error: any) {
     const mensagem = error.response?.data?.message || 'Erro ao realizar login.'

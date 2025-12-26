@@ -1,13 +1,16 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import { RouterLink } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
-import { LogOut, User } from 'lucide-vue-next'
+import { LogOut, User, Shield } from 'lucide-vue-next'
 
 const authStore = useAuthStore()
 
 const handleLogout = () => {
   authStore.logout()
 }
+
+const isAdmin = computed(() => authStore.user?.role === 'admin')
 </script>
 
 <template>
@@ -15,12 +18,14 @@ const handleLogout = () => {
 
     <div class="relative mx-auto flex max-w-7xl items-center justify-between px-8">
 
-      <RouterLink to="/" class="text-xl font-semibold text-gray-900">
-        <span>Carona UFC</span>
+      <RouterLink to="/" class="text-xl font-semibold text-gray-900 flex items-center gap-2">
+        <Shield v-if="isAdmin" class="text-red-600" :size="24" />
+        <span v-if="isAdmin">Carona UFC <span class="text-red-600 font-bold">Admin</span></span>
+        <span v-else>Carona UFC</span>
       </RouterLink>
 
       <nav
-        v-if="authStore.isAuthenticated"
+        v-if="authStore.isAuthenticated && !isAdmin"
         class="absolute left-1/2 top-1/2 flex -translate-x-1/2 -translate-y-1/2 items-center gap-6"
       >
         <RouterLink
@@ -61,7 +66,9 @@ const handleLogout = () => {
       <div>
 
         <div v-if="authStore.isAuthenticated" class="flex items-center gap-4">
+
           <RouterLink
+            v-if="!isAdmin"
             to="/perfil"
             class="flex items-center gap-2 text-sm font-medium text-gray-900 transition-colors hover:text-blue-600"
             title="Meu Perfil"
@@ -71,6 +78,13 @@ const handleLogout = () => {
             </div>
             <span>{{ authStore.user?.name?.split(' ')[0] }}</span>
           </RouterLink>
+
+          <div v-else class="flex items-center gap-2 text-sm font-medium text-gray-900">
+             <div class="flex h-8 w-8 items-center justify-center rounded-full bg-red-100 text-red-600">
+              <User :size="16" />
+            </div>
+            <span>Admin</span>
+          </div>
 
           <button
             @click="handleLogout"
@@ -100,6 +114,3 @@ const handleLogout = () => {
     </div>
   </header>
 </template>
-
-<style scoped>
-</style>

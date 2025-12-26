@@ -16,6 +16,7 @@ export interface User {
   rating: number;
   showPhone: boolean;
   emailNotifications: boolean;
+  isActive: boolean;
 }
 
 export interface CreateRidePayload {
