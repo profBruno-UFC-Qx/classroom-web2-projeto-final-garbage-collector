@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { VehicleController } from "../controllers/VehicleController";
 import { ensureAuthenticated } from "../middlewares/ensureAuthenticated";
+import { ensureAccountActive } from "../middlewares/ensureAccountActive"; 
 import { ensureRole } from "../middlewares/ensureRole"; 
 import { validate } from "../middlewares/validateResource";
 import { createVehicleSchema } from "../schemas/vehicle.schema";
@@ -8,6 +9,7 @@ import { createVehicleSchema } from "../schemas/vehicle.schema";
 const router = Router();
 
 router.use(ensureAuthenticated);
+router.use(ensureAccountActive);
 
 router.post(
   "/", 

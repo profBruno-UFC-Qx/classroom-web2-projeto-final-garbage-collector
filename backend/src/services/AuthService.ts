@@ -48,6 +48,10 @@ export class AuthService {
       throw new AppError("Credenciais inválidas.", 401);
     }
 
+    if (!user.isActive) {
+      throw new AppError("Sua conta foi desativada. Entre em contato com um administrador.", 403);
+    }
+
     const isValidPassword = await bcrypt.compare(password, user.password);
     if (!isValidPassword) {
       throw new AppError("Credenciais inválidas.", 401);

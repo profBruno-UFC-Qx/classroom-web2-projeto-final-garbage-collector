@@ -10,6 +10,7 @@ export interface UserDTO {
   emailNotifications: boolean;
   avatar?: string;
   rating: number;
+  isActive: boolean; 
 }
 
 export const toUserDTO = (user: User): UserDTO => {
@@ -22,6 +23,7 @@ export const toUserDTO = (user: User): UserDTO => {
     showPhone: user.showPhone,
     emailNotifications: user.emailNotifications,
     avatar: user.avatar,
-    rating: user.rating
+    rating: user.rating,
+    isActive: user.isActive 
   };
 };

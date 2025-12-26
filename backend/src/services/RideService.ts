@@ -189,4 +189,21 @@ export class RideService {
 
     return { asDriver, asPassenger };
   }
+
+  static async listAll() {
+    return rideRepo.find({
+      relations: ["driver", "vehicle"],
+      order: { date: "DESC", time: "DESC" }
+    });
+  }
+
+  static async deleteRide(rideId: number) {
+    const ride = await rideRepo.findOneBy({ id: rideId });
+    
+    if (!ride) {
+      throw new AppError("Carona não encontrada.", 404);
+    }
+    
+    await rideRepo.remove(ride);
+  }
 }

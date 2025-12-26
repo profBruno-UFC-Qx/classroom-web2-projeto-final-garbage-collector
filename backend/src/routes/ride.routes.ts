@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { RideController } from "../controllers/RideController";
 import { ensureAuthenticated } from "../middlewares/ensureAuthenticated";
+import { ensureAccountActive } from "../middlewares/ensureAccountActive"; 
 import { ensureRole } from "../middlewares/ensureRole"; 
 import { validate } from "../middlewares/validateResource";
 import { createRideSchema } from "../schemas/ride.schema";
@@ -8,6 +9,7 @@ import { createRideSchema } from "../schemas/ride.schema";
 const router = Router();
 
 router.use(ensureAuthenticated);
+router.use(ensureAccountActive);
 
 router.get("/", RideController.list); 
 router.get("/me", RideController.myRides); 

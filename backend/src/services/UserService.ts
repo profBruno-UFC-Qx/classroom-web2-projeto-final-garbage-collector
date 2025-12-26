@@ -48,4 +48,27 @@ export class UserService {
     await userRepository.save(user);
     return user;
   }
+
+  static async listAll() {
+    return userRepository.find({
+      order: { name: "ASC" }
+    });
+  }
+
+  static async toggleStatus(targetUserId: number) {
+    const user = await userRepository.findOneBy({ id: targetUserId });
+    
+    if (!user) {
+      throw new AppError("Usuário alvo não encontrado.", 404);
+    }
+
+    if (user.role === 'admin') {
+      throw new AppError("Não é possível desativar outro administrador.", 403);
+    }
+
+    user.isActive = !user.isActive;
+    await userRepository.save(user);
+
+    return user;
+  }
 }

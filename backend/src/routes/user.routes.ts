@@ -2,6 +2,7 @@ import { Router } from "express";
 import multer from "multer";
 import { UserController } from "../controllers/UserController";
 import { ensureAuthenticated } from "../middlewares/ensureAuthenticated";
+import { ensureAccountActive } from "../middlewares/ensureAccountActive"; 
 import { validate, validateFile } from "../middlewares/validateResource"; 
 import { updateUserSchema, avatarFileSchema } from "../schemas/user.schema";
 
@@ -12,6 +13,7 @@ const upload = multer({
 });
 
 router.use(ensureAuthenticated);
+router.use(ensureAccountActive);
 
 router.get(
   "/me", 

@@ -37,6 +37,9 @@ export class User {
   @OneToMany(() => Ride, (ride) => ride.driver)
   ridesAsDriver!: Ride[];
 
+  @Column({ default: true })
+  isActive!: boolean;
+
   @Column({ default: false })
   showPhone!: boolean;
 

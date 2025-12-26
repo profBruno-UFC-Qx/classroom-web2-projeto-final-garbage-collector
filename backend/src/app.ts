@@ -6,6 +6,7 @@ import authRoutes from './routes/auth.routes';
 import vehicleRoutes from './routes/vehicle.routes';
 import rideRoutes from './routes/ride.routes';
 import userRoutes from './routes/user.routes'; 
+import adminRoutes from './routes/admin.routes'; 
 
 import { handleError } from "./middlewares/handleError";
 
@@ -16,6 +17,7 @@ app.use(cors());
 app.use(express.json());
 
 app.use('/auth', authRoutes);
+app.use('/admin', adminRoutes);
 app.use('/vehicles', vehicleRoutes);
 app.use("/rides", rideRoutes);
 app.use("/users", userRoutes);
