@@ -9,13 +9,18 @@ export const updateUserSchema = z.object({
     .min(3, "O nome deve ter pelo menos 3 caracteres.")
     .max(100, "O nome não pode exceder 100 caracteres.")
     .optional(),
+    
   phone: z
     .string()
-    .transform(val => val.replace(/\D/g, ''))
-    .refine(val => /^[1-9]{2}9?\d{8}$/.test(val), {
+    .transform((val) => val.replace(/\D/g, '')) 
+    .refine((val) => {
+      if (val === "") return true;       
+      return /^[1-9]{2}9?\d{8}$/.test(val);
+    }, {
       message: "Formato de telefone inválido.",
     })
     .optional(),
+
   showPhone: z.boolean().optional(),
   emailNotifications: z.boolean().optional(),
 });

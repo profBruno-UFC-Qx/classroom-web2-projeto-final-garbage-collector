@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { Star, CheckSquare, Square, Loader2 } from 'lucide-vue-next'
 import { toast } from 'vue3-toastify'
 import BaseInput from '@/components/base/BaseInput.vue'
@@ -18,6 +18,8 @@ const isLoading = ref(false)
 const isSaving = ref(false)
 const activeTab = ref<'dados' | 'configuracoes'>('dados')
 
+const originalForm = ref<User | null>(null)
+
 const form = ref<User>({
   id: 0,
   name: '',
@@ -32,6 +34,15 @@ const form = ref<User>({
 
 const totalCaronas = ref(0)
 
+const hasChanges = computed(() => {
+  if (!originalForm.value) return false
+
+  const nameChanged = form.value.name !== originalForm.value.name
+  const phoneChanged = form.value.phone !== originalForm.value.phone
+
+  return nameChanged || phoneChanged
+})
+
 const fetchProfile = async () => {
   try {
     isLoading.value = true
@@ -42,9 +53,13 @@ const fetchProfile = async () => {
       userData.avatar = defaultAvatarImg
     }
 
+    userData.phone = userData.phone || ''
+
     authStore.updateUser(userData)
 
     form.value = { ...userData }
+
+    originalForm.value = { ...userData }
   }
   catch (error) {
     console.error('Erro ao carregar perfil:', error)
@@ -56,6 +71,8 @@ const fetchProfile = async () => {
 }
 
 const updateProfileData = async () => {
+  if (!hasChanges.value) return
+
   try {
     isSaving.value = true
 
@@ -64,10 +81,13 @@ const updateProfileData = async () => {
       phone: form.value.phone
     })
 
-    if (response.data.user) {
-      authStore.updateUser(response.data.user)
-    } else {
-      authStore.updateUser({ name: form.value.name, phone: form.value.phone })
+    const updatedUser = response.data.user || { name: form.value.name, phone: form.value.phone }
+
+    authStore.updateUser(updatedUser)
+
+    if (originalForm.value) {
+      originalForm.value.name = form.value.name
+      originalForm.value.phone = form.value.phone
     }
 
     toast.success('Dados atualizados com sucesso!')
@@ -90,6 +110,10 @@ const togglePrivacy = async (field: 'showPhone' | 'emailNotifications') => {
     await api.put('/users/', { [field]: form.value[field] })
 
     authStore.updateUser({ [field]: form.value[field] })
+
+    if (originalForm.value) {
+        originalForm.value[field] = form.value[field]
+    }
   }
   catch (error) {
     form.value[field] = previousState
@@ -115,6 +139,8 @@ const handleImageUpdate = async (file: File) => {
 
     form.value.avatar = newAvatarUrl
     authStore.updateUser({ avatar: newAvatarUrl })
+
+    if(originalForm.value) originalForm.value.avatar = newAvatarUrl
 
     toast.update(idToast, {
       render: "Foto de perfil atualizada!",
@@ -147,6 +173,8 @@ const handleBecomeDriver = async () => {
 
     form.value.role = updatedUser.role
     authStore.updateUser({ role: updatedUser.role })
+
+    if(originalForm.value) originalForm.value.role = updatedUser.role
 
     if (newToken) {
       authStore.setToken(newToken)
@@ -184,7 +212,7 @@ onMounted(() => {
 
     <div v-if="!isLoading" class="grid grid-cols-1 gap-8 md:grid-cols-3">
 
-      <aside class="md:col-span-1">
+      <aside class="md:col-span-1 w-[260px]">
         <div class="rounded-lg border border-gray-200 bg-white p-6 text-center shadow-md h-full">
           <div class="mx-auto mb-4">
             <UserAvatarUpload
@@ -229,7 +257,7 @@ onMounted(() => {
           </button>
         </div>
 
-        <div class="w-full md:w-[500px]">
+        <div class="w-full">
 
           <div v-if="activeTab === 'dados'" class="rounded-lg border border-gray-200 bg-white shadow-md">
             <div class="p-6">
@@ -268,7 +296,7 @@ onMounted(() => {
               </div>
 
               <div class="text-right">
-                <BaseButton type="submit" :disabled="isSaving">
+                <BaseButton type="submit" :disabled="!hasChanges || isSaving">
                   <span v-if="isSaving" class="flex items-center gap-2">
                     <Loader2 class="animate-spin h-4 w-4" /> Salvando...
                   </span>
@@ -279,7 +307,7 @@ onMounted(() => {
           </div>
 
           <div v-if="activeTab === 'configuracoes'" class="rounded-lg border border-gray-200 bg-white shadow-md">
-            <div class="p-6">
+             <div class="p-6">
               <h3 class="text-lg font-medium text-gray-900">Configurações da Conta</h3>
               <p class="mt-1 text-sm text-gray-600">Preferências e privacidade.</p>
             </div>
