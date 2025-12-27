@@ -28,7 +28,11 @@ const router = createRouter({
       name: 'about',
       component: () => import('../views/AboutView.vue'),
     },
-
+    {
+      path: "/verificar-email",
+      name: 'verify-email',
+      component: () => import('../views/VerifyEmailView.vue'),
+    },
     // --- Rotas Protegidas (Passageiro/Motorista) ---
     {
       path: "/buscar-carona",

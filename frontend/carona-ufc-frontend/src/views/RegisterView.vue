@@ -25,10 +25,17 @@ const handleRegister = async () => {
 
   try {
     await authStore.register(fullName.value, email.value, password.value)
-    toast.success('Conta criada com sucesso! Faça login.')
-    router.push('/login')
 
-  } catch (error: any) {
+    router.push({
+      name: 'verify-email',
+      query: {
+        email: email.value,
+        mode: 'sent'
+      }
+    })
+
+  }
+  catch (error: any) {
     const data = error.response?.data
 
     if (data?.errors && Array.isArray(data.errors)) {
@@ -36,7 +43,8 @@ const handleRegister = async () => {
     } else {
       toast.error(data?.message || 'Erro ao criar conta.')
     }
-  } finally {
+  }
+  finally {
     isLoading.value = false
   }
 }

@@ -37,6 +37,9 @@ export class User {
   @OneToMany(() => Ride, (ride) => ride.driver)
   ridesAsDriver!: Ride[];
 
+  @Column({ default: false })
+  isVerified!: boolean;
+  
   @Column({ default: true })
   isActive!: boolean;
 
