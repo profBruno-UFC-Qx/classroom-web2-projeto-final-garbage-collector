@@ -7,8 +7,10 @@ import { RouterLink } from 'vue-router'
 import { toast } from 'vue3-toastify'
 import api from '@/utils/api'
 import { getErrorMessage } from '@/utils/errorHandler'
+import { useAuthStore } from '@/stores/auth'
 import type { Carona } from '@/types'
 
+const authStore = useAuthStore()
 const activeTab = ref<'agendadas' | 'historico'>('agendadas')
 const isLoading = ref(true)
 
@@ -70,7 +72,11 @@ onMounted(() => {
             Buscar
           </BaseButton>
         </RouterLink>
-        <RouterLink to="/oferecer-carona">
+
+        <RouterLink
+          to="/oferecer-carona"
+          v-if="authStore.user?.role === 'motorista'"
+        >
           <BaseButton>
             <Car :size="18" />
             Oferecer
