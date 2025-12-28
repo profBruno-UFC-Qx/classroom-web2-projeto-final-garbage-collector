@@ -13,10 +13,12 @@ export interface User {
   phone: string;
   role: 'passageiro' | 'motorista' | 'admin';
   avatar: string;
-  rating: number;
+  totalRides?: number;
   showPhone: boolean;
   emailNotifications: boolean;
   isActive?: boolean;
+  isVerified?: boolean;
+  createdAt: string;
 }
 
 export interface CreateRidePayload {

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
-import { Star, CheckSquare, Square, Loader2 } from 'lucide-vue-next'
+import { CheckSquare, Square, Loader2, CalendarDays } from 'lucide-vue-next'
 import { toast } from 'vue3-toastify'
 import BaseInput from '@/components/base/BaseInput.vue'
 import BaseButton from '@/components/base/BaseButton.vue'
@@ -9,6 +9,7 @@ import api from '@/utils/api'
 import { useAuthStore } from '@/stores/auth'
 import { getErrorMessage } from '@/utils/errorHandler'
 import type { User } from '@/types'
+import { formatISOToBr } from '@/utils/dateHandler'
 
 import defaultAvatarImg from '@/assets/images/profile.png'
 
@@ -27,19 +28,17 @@ const form = ref<User>({
   phone: '',
   role: 'passageiro',
   avatar: '',
-  rating: 0,
   showPhone: false,
-  emailNotifications: false
+  emailNotifications: false,
+  isActive: true,
+  isVerified: true,
+  createdAt: ''
 })
-
-const totalCaronas = ref(0)
 
 const hasChanges = computed(() => {
   if (!originalForm.value) return false
-
   const nameChanged = form.value.name !== originalForm.value.name
   const phoneChanged = form.value.phone !== originalForm.value.phone
-
   return nameChanged || phoneChanged
 })
 
@@ -58,7 +57,6 @@ const fetchProfile = async () => {
     authStore.updateUser(userData)
 
     form.value = { ...userData }
-
     originalForm.value = { ...userData }
   }
   catch (error) {
@@ -198,7 +196,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="space-y-6 h-[700px]">
+  <div class="space-y-6 w-full">
 
     <div class="flex items-center justify-between">
       <div>
@@ -212,14 +210,14 @@ onMounted(() => {
 
     <div v-if="!isLoading" class="grid grid-cols-1 gap-8 md:grid-cols-3">
 
-      <aside class="md:col-span-1 w-[260px]">
+      <aside class="md:col-span-1">
         <div class="rounded-lg border border-gray-200 bg-white p-6 text-center shadow-md h-full">
           <div class="mx-auto mb-4">
             <UserAvatarUpload
               ref="avatarUploadRef"
               :src="authStore.user?.avatar || defaultAvatarImg"
               :alt="authStore.user?.name"
-              size="h-28 w-28"
+              size="h-36 w-36"
               @update:image="handleImageUpdate"
             />
           </div>
@@ -231,18 +229,18 @@ onMounted(() => {
             {{ authStore.user?.role === 'motorista' ? 'Motorista' : 'Passageiro' }}
           </span>
 
-          <div class="mt-6 border-t border-gray-100 pt-4 text-left">
-            <div class="flex items-center justify-between text-sm">
-              <span class="text-gray-600">Avaliação</span>
-              <span class="flex items-center gap-1 font-medium text-gray-900">
-                <Star :size="16" class="fill-amber-400 text-amber-400" /> {{ authStore.user?.rating || 'N/A' }}
+          <div class="mt-6 border-t border-gray-100 pt-4 text-left gap-20">
+
+            <div class="mb-2.5 flex items-center justify-between text-sm">
+              <span class="text-gray-600 flex items-center gap-1.5">
+                <CalendarDays :size="14" class="text-gray-400" />
+                Membro desde
+              </span>
+              <span class="font-medium text-gray-900 ">
+                {{ formatISOToBr(authStore.user?.createdAt?.substring(0, 10) || '') }}
               </span>
             </div>
 
-            <div class="mt-2 flex items-center justify-between text-sm">
-              <span class="text-gray-600">Total de caronas</span>
-              <span class="font-medium text-gray-900">{{ totalCaronas }}</span>
-            </div>
           </div>
         </div>
       </aside>

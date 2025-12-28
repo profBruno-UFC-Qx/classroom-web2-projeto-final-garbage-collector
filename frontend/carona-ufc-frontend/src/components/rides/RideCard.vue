@@ -3,8 +3,7 @@ import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import BaseButton from '@/components/base/BaseButton.vue'
 import {
-  MapPin, Calendar, Users, Star,
-  Clock, CheckCircle, AlertCircle, XCircle
+  MapPin, Calendar, Users, Clock, CheckCircle, AlertCircle, XCircle
 } from 'lucide-vue-next'
 
 import type { PropType } from 'vue'
@@ -93,7 +92,7 @@ const handleAction = () => {
 
     <div
       v-if="statusInfo"
-      class="absolute top-4 right-4 flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium"
+      class="absolute top-6 right-6 flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium"
       :class="statusInfo.color"
     >
       <component :is="statusInfo.icon" :size="12" />
@@ -111,9 +110,6 @@ const handleAction = () => {
             {{ carona?.driver.name || 'Motorista' }}
           </h3>
           <div class="flex items-center gap-1.5 mt-0.5">
-            <Star :size="14" class="fill-amber-400 text-amber-400" />
-            <span class="text-sm text-gray-600">{{ carona?.driver.rating?.toFixed(1) || '5.0' }}</span>
-            <span class="text-gray-300">•</span>
             <span class="truncate text-sm text-gray-500" :title="carona?.vehicle.model">
               {{ carona?.vehicle.model || 'Veículo' }}
             </span>

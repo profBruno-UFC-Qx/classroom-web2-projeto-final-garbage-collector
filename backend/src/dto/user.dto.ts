@@ -10,6 +10,8 @@ export interface UserDTO {
   emailNotifications: boolean;
   avatar?: string;
   rating: number;
+  totalRides: number;
+  createdAt: Date;
   isActive: boolean;
   isVerified: boolean; 
 }
@@ -25,6 +27,8 @@ export const toUserDTO = (user: User): UserDTO => {
     emailNotifications: user.emailNotifications,
     avatar: user.avatar,
     rating: user.rating,
+    createdAt: user.createdAt,
+    totalRides: user.totalRides,
     isActive: user.isActive,
     isVerified: user.isVerified 
   };

@@ -3,7 +3,7 @@ import { ref, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { toast } from 'vue3-toastify'
 import {
-  MapPin, Calendar, Clock, Car, Star,
+  MapPin, Calendar, Clock, Car,
   User, MessageCircle, CheckCircle, X, Check, Loader2, AlertCircle
 } from 'lucide-vue-next'
 import BaseButton from '@/components/base/BaseButton.vue'
@@ -11,6 +11,7 @@ import api from '@/utils/api'
 import { getErrorMessage } from '@/utils/errorHandler'
 import { useAuthStore } from '@/stores/auth'
 import type { Carona } from '@/types'
+import { formatISOToBr } from '@/utils/dateHandler'
 
 const route = useRoute()
 const router = useRouter()
@@ -39,17 +40,10 @@ const userStatus = computed(() => {
   return carona.value?.userRequestStatus || 'viewer'
 })
 
-const vagasOcupadas = computed(() => passageirosAprovados.value.length)
 const vagasDisponiveis = computed(() => carona.value?.seats || 0)
 
-// Função para formatar data de YYYY-MM-DD para DD/MM/YYYY
-const formatarData = (data: string) => {
-  const [ano, mes, dia] = data.split('-')
-  return `${dia}/${mes}/${ano}`
-}
-
 const dataFormatada = computed(() => {
-  return carona.value?.date ? formatarData(carona.value.date) : ''
+  return carona.value?.date ? formatISOToBr(carona.value.date) : ''
 })
 
 const fetchCaronaDetails = async () => {
@@ -262,12 +256,11 @@ onMounted(() => {
             <div>
               <h4 class="text-lg font-semibold text-gray-900">{{ carona.driver.name }}</h4>
               <div class="flex items-center gap-1 mt-1 text-sm text-amber-500">
-                <Star :size="16" class="fill-current" />
-                <span class="font-medium text-gray-900">{{ carona.driver.rating?.toFixed(1) || 'N/A' }}</span>
+                <span class="font-medium text-gray-900">Caronas realizadas: {{ carona.driver.totalRides }}</span>
               </div>
 
               <button
-                v-if="userStatus === 'approved' && !isDriver"
+                v-if="userStatus === 'approved' && !isDriver && carona.driver.showPhone"
                 @click="openWhatsApp"
                 class="mt-3 inline-flex items-center gap-1.5 text-sm font-medium text-green-600 hover:text-green-700"
               >
