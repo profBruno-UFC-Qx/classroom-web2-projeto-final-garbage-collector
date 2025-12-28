@@ -1,6 +1,7 @@
 import { AppDataSource } from "../config/data-source";
 import { Ride } from "../entities/Ride";
 import { RideRequest } from "../entities/RideRequest";
+import { Brackets } from "typeorm";
 import { Vehicle } from "../entities/Vehicle";
 import { User } from "../entities/User";
 import { CreateRideInput } from "../schemas/ride.schema";
@@ -11,6 +12,8 @@ interface RideFilters {
   origin?: string;
   destination?: string;
   date?: string;
+  page?: number;
+  limit?: number;
 }
 
 const rideRepo = AppDataSource.getRepository(Ride);
@@ -36,8 +39,8 @@ export class RideService {
 
     const ride = rideRepo.create({
       ...data,
-      driver: driver,
-      vehicle: vehicle,
+      driver,
+      vehicle,
       status: 'open'
     });
 
@@ -47,33 +50,71 @@ export class RideService {
   }
 
   static async list(filters: RideFilters, currentUserId?: number) {
-    const whereCondition: any = { 
-        status: 'open',
-    };
-    
+    const { origin, destination, date, page = 1, limit = 10 } = filters;
+    const skip = (page - 1) * limit;
+
+    const now = new Date();
+    const todayStr = now.toISOString().split('T')[0];
+    const currentHours = String(now.getHours()).padStart(2, '0');
+    const currentMinutes = String(now.getMinutes()).padStart(2, '0');
+    const currentTimeStr = `${currentHours}:${currentMinutes}`;
+
+    const query = rideRepo.createQueryBuilder("ride")
+      .leftJoinAndSelect("ride.driver", "driver")
+      .leftJoinAndSelect("ride.vehicle", "vehicle")
+      .leftJoinAndSelect("ride.requests", "requests")
+      .leftJoinAndSelect("requests.passenger", "passenger")
+      .where("ride.status = :status", { status: 'open' });
+
     if (currentUserId) {
-        whereCondition.driverId = Not(currentUserId);
+      query.andWhere("ride.driverId != :currentUserId", { currentUserId });
     }
 
-    if (filters.origin) {
-      whereCondition.origin = Like(`%${filters.origin}%`);
+    if (origin) {
+      query.andWhere("ride.origin LIKE :origin", { origin: `%${origin}%` });
+    }
+    if (destination) {
+      query.andWhere("ride.destination LIKE :destination", { destination: `%${destination}%` });
     }
 
-    if (filters.destination) {
-      whereCondition.destination = Like(`%${filters.destination}%`);
+    if (date) {
+      // Caso 1: Usuário filtrou uma data específica
+      if (date === todayStr) {
+        query.andWhere("ride.date = :date", { date });
+        query.andWhere("ride.time >= :currentTime", { currentTime: currentTimeStr });
+      } else {
+        // Se for data futura ou passada
+        query.andWhere("ride.date = :date", { date });
+        // Garantir que nunca retorna passado
+        query.andWhere("ride.date >= :todayStr", { todayStr });
+      }
+    } else {
+      // Caso 2: Busca Padrão (Sem data definida)
+      query.andWhere(new Brackets(qb => {
+        qb.where("ride.date > :today", { today: todayStr })
+          .orWhere(new Brackets(subQb => {
+            subQb.where("ride.date = :today", { today: todayStr })
+                .andWhere("ride.time >= :time", { time: currentTimeStr });
+          }));
+      }));
     }
 
-    if (filters.date) {
-      whereCondition.date = filters.date;
-    }
+    query.orderBy("ride.date", "ASC")
+        .addOrderBy("ride.time", "ASC");
 
-    const rides = await rideRepo.find({
-      where: whereCondition,
-      relations: ["driver", "vehicle", "requests", "requests.passenger"],
-      order: { date: "ASC", time: "ASC" }
-    });
+    query.skip(skip).take(limit);
 
-    return rides;
+    const [rides, total] = await query.getManyAndCount();
+
+    return {
+      data: rides,
+      meta: {
+        total,
+        page: Number(page),
+        limit: Number(limit),
+        totalPages: Math.ceil(total / limit)
+      }
+    };
   }
 
   static async getById(rideId: number) {
@@ -96,7 +137,7 @@ export class RideService {
     ride.status = 'cancelled';
     await rideRepo.save(ride);
   
-    return ride;
+    return { message: "Carona cancelada com sucesso" };
   }
 
   static async requestSeat(rideId: number, passengerId: number) {

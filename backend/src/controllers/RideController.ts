@@ -20,15 +20,26 @@ export class RideController {
   }
 
   static async list(req: Request, res: Response) {
-    const { origin, destination, date } = req.query;
+    const { origin, destination, date, page, limit } = req.query;
+    const currentUserId = req.user?.id; 
 
-    const rides = await RideService.list({
-        origin: origin as string,
-        destination: destination as string,
-        date: date as string
-    }, req.user?.id); 
+    const result = await RideService.list(
+      {
+        origin: origin ? String(origin) : undefined,
+        destination: destination ? String(destination) : undefined,
+        date: date ? String(date) : undefined,
+        page: page ? Number(page) : 1,
+        limit: limit ? Number(limit) : 10
+      },
+      currentUserId 
+    );
 
-    return res.json(rides.map(r => toRideDTO(r, req.user?.id)));
+    const ridesWithDto = result.data.map(ride => toRideDTO(ride, currentUserId));
+
+    return res.json({
+      data: ridesWithDto,
+      meta: result.meta
+    });
   }
 
   static async getById(req: Request, res: Response) {
@@ -42,8 +53,8 @@ export class RideController {
     const userId = req.user?.id;
     if (!userId) throw new AppError("Não autenticado");
 
-    await RideService.cancelRide(Number(id), userId);
-    return res.json({ message: "Carona cancelada com sucesso." });
+    const result = await RideService.cancelRide(Number(id), userId);
+    return res.json(result);
   }
 
   static async requestSeat(req: Request, res: Response) {

@@ -3,6 +3,8 @@ import { User } from "./User";
 import { Vehicle } from "./Vehicle";
 import { RideRequest } from "./RideRequest";
 
+export type RideStatus = 'open' | 'full' | 'cancelled' | 'finished';
+
 @Entity()
 export class Ride {
   @PrimaryGeneratedColumn()
@@ -14,10 +16,10 @@ export class Ride {
   @Column()
   destination!: string;
 
-  @Column()
+  @Column({ type: 'date' })
   date!: string;
 
-  @Column()
+  @Column({ type: 'time' })
   time!: string;
 
   @Column()
@@ -40,8 +42,11 @@ export class Ride {
   @Column()
   vehicleId!: number;
 
-  @Column({ default: 'open' })
-  status!: string;
+  @Column({
+    type: "varchar",
+    default: "open"
+  })
+  status!: RideStatus;
 
   @OneToMany(() => RideRequest, (request) => request.ride)
   requests!: RideRequest[];

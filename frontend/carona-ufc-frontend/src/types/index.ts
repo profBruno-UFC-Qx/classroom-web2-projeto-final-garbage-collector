@@ -56,7 +56,7 @@ export interface Carona {
   date: string;
   time: string;
   seats: number;
-  status: string;
+  status: 'open' | 'full' | 'cancelled' | 'finished';
   observation?: string;
   driver: User;
   vehicle: {
@@ -69,4 +69,16 @@ export interface Carona {
   passengers?: Passageiro[];
   userRequestStatus?: 'pending' | 'approved' | 'rejected' | null;
   papel?: 'motorista' | 'passageiro';
+}
+
+export interface MetaPagination {
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
+export interface PaginatedResponse<T> {
+  data: T[];
+  meta: MetaPagination;
 }
