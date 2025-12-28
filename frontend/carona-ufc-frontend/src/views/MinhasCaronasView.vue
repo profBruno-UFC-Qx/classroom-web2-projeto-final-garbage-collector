@@ -14,11 +14,30 @@ const authStore = useAuthStore()
 const activeTab = ref<'agendadas' | 'historico'>('agendadas')
 const isLoading = ref(true)
 
+const filterRole = ref<'todos' | 'motorista' | 'passageiro'>('todos')
+
 const caronasAgendadas = ref<Carona[]>([])
 const historicoCaronas = ref<Carona[]>([])
 
 const hasRidesAgendadas = computed(() => caronasAgendadas.value.length > 0)
 const hasHistory = computed(() => historicoCaronas.value.length > 0)
+
+const filteredAgendadas = computed(() => {
+  if (filterRole.value === 'todos') return caronasAgendadas.value
+  return caronasAgendadas.value.filter(carona => carona.papel === filterRole.value)
+})
+
+const filteredHistorico = computed(() => {
+  if (filterRole.value === 'todos') return historicoCaronas.value
+  return historicoCaronas.value.filter(carona => carona.papel === filterRole.value)
+})
+
+const showFilters = computed(() => {
+  if (isLoading.value) return false
+  if (activeTab.value === 'agendadas') return hasRidesAgendadas.value
+  if (activeTab.value === 'historico') return hasHistory.value
+  return false
+})
 
 const fetchMinhasCaronas = async () => {
   isLoading.value = true
@@ -136,55 +155,81 @@ onMounted(() => {
       <p>Carregando suas caronas...</p>
     </div>
 
-    <div v-else-if="activeTab === 'agendadas'">
-      <div v-if="!hasRidesAgendadas" class="rounded-lg border-2 border-dashed border-gray-300 p-12 text-center">
-        <Calendar :size="48" class="mx-auto text-gray-400" />
-        <h3 class="mt-2 text-sm font-medium text-gray-900">Nenhuma carona agendada</h3>
-        <p class="mt-1 text-sm text-gray-500">
-          Você não tem nenhuma viagem programada para os próximos dias.
-        </p>
-        <div class="mt-6">
-          <RouterLink to="/buscar-carona" class="text-sm font-medium text-blue-600 hover:underline">
-            Buscar uma carona
-          </RouterLink>
-        </div>
+    <div v-else>
+
+      <div v-if="showFilters" class="mb-6 flex items-center gap-2 overflow-x-auto pb-2">
+        <button
+          @click="filterRole = 'todos'"
+          class="rounded-full px-4 py-1.5 text-sm font-medium transition-colors"
+          :class="filterRole === 'todos' ? 'bg-gray-900 text-white' : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'"
+        >
+          Todas
+        </button>
+        <button
+          @click="filterRole = 'motorista'"
+          class="rounded-full px-4 py-1.5 text-sm font-medium transition-colors"
+          :class="filterRole === 'motorista' ? 'bg-gray-900 text-white' : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'"
+        >
+          Sou Motorista
+        </button>
+        <button
+          @click="filterRole = 'passageiro'"
+          class="rounded-full px-4 py-1.5 text-sm font-medium transition-colors"
+          :class="filterRole === 'passageiro' ? 'bg-gray-900 text-white' : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'"
+        >
+          Sou Passageiro
+        </button>
       </div>
 
-      <div v-else class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-        <div
-          v-for="carona in caronasAgendadas"
-          :key="carona.id"
-          class="relative"
-        >
-          <div
-            class="absolute -top-2 -right-2 z-10 rounded-full px-3 py-1 text-xs font-bold shadow-sm"
-            :class="carona.papel === 'motorista' ? 'bg-gray-900 text-white' : 'bg-blue-100 text-blue-700'"
-          >
-            {{ carona.papel === 'motorista' ? 'Motorista' : 'Passageiro' }}
+      <div v-if="activeTab === 'agendadas'">
+        <div v-if="!hasRidesAgendadas" class="rounded-lg border-2 border-dashed border-gray-300 p-12 text-center">
+          <Calendar :size="48" class="mx-auto text-gray-400" />
+          <h3 class="mt-2 text-sm font-medium text-gray-900">Nenhuma carona agendada</h3>
+          <p class="mt-1 text-sm text-gray-500">
+            Você não tem nenhuma viagem programada para os próximos dias.
+          </p>
+          <div class="mt-6">
+            <RouterLink to="/buscar-carona" class="text-sm font-medium text-blue-600 hover:underline">
+              Buscar uma carona
+            </RouterLink>
+          </div>
+        </div>
+
+        <div v-else>
+          <div v-if="filteredAgendadas.length === 0" class="py-12 text-center text-gray-500">
+            <p>Nenhuma carona agendada encontrada para este filtro.</p>
           </div>
 
-          <RideCard
-            :carona="carona"
-            :role="carona.papel"
-          />
+          <div v-else class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+            <div v-for="carona in filteredAgendadas" :key="carona.id">
+              <RideCard :carona="carona" :role="carona.papel" />
+            </div>
+          </div>
         </div>
       </div>
-    </div>
 
-    <div v-else-if="activeTab === 'historico'">
-      <div v-if="!hasHistory" class="rounded-lg border-2 border-dashed border-gray-300 p-12 text-center">
-        <History :size="48" class="mx-auto text-gray-400" />
-        <h3 class="mt-2 text-sm font-medium text-gray-900">Histórico vazio</h3>
-        <p class="mt-1 text-sm text-gray-500">
-          Suas viagens realizadas aparecerão aqui.
-        </p>
+      <div v-else-if="activeTab === 'historico'">
+        <div v-if="!hasHistory" class="rounded-lg border-2 border-dashed border-gray-300 p-12 text-center">
+          <History :size="48" class="mx-auto text-gray-400" />
+          <h3 class="mt-2 text-sm font-medium text-gray-900">Histórico vazio</h3>
+          <p class="mt-1 text-sm text-gray-500">
+            Suas viagens realizadas aparecerão aqui.
+          </p>
+        </div>
+
+        <div v-else>
+           <div v-if="filteredHistorico.length === 0" class="py-12 text-center text-gray-500">
+            <p>Nenhuma carona no histórico para este filtro.</p>
+          </div>
+
+          <div v-else class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3 opacity-75 grayscale transition-all hover:opacity-100 hover:grayscale-0">
+            <div v-for="carona in filteredHistorico" :key="carona.id">
+              <RideCard :carona="carona" :role="carona.papel || 'viewer'" />
+            </div>
+          </div>
+        </div>
       </div>
 
-      <div v-else class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3 opacity-75 grayscale transition-all hover:opacity-100 hover:grayscale-0">
-         <div v-for="carona in historicoCaronas" :key="carona.id">
-            <RideCard :carona="carona" :role="carona.papel || 'viewer'" />
-         </div>
-      </div>
     </div>
 
   </div>
