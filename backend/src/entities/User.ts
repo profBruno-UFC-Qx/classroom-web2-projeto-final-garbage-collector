@@ -25,9 +25,6 @@ export class User {
   @Column({ nullable: true })
   avatar?: string;
 
-  @Column({ type: 'float', default: 5.0 })
-  rating!: number;
-
   @Column({ default: 0 })
   totalRides!: number;
 
