@@ -86,7 +86,7 @@ onMounted(() => {
   <div class="w-full">
 
     <div class="mb-8">
-      <h1 class="text-3xl font-bold text-gray-900">Buscar Caronas</h1>
+      <h1 class="text-3xl font-semibold text-gray-900">Buscar Caronas</h1>
       <p class="mt-2 text-base text-gray-600">Encontre caronas disponíveis para seu destino.</p>
     </div>
 

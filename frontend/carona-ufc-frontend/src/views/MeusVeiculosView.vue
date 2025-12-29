@@ -19,42 +19,38 @@ const handleDelete = async (id: number) => {
 </script>
 
 <template>
-  <div class="mx-auto w-[700px] px-4 py-8">
+  <div class="space-y-6 w-full h-full">
 
-    <div class="mb-8 flex items-center justify-between">
+    <div class="flex flex-col justify-between gap-4 md:flex-row md:items-center">
       <div>
-        <h1 class="text-2xl font-bold text-gray-900">Meus Veículos</h1>
-        <p class="mt-1 text-sm text-gray-600">Gerencie os carros que você usa para dar carona.</p>
+        <h1 class="text-3xl font-semibold text-gray-900">Meus Veículos</h1>
+        <p class="mt-2 text-gray-600">Gerencie os carros que você usa para dar carona.</p>
       </div>
 
       <RouterLink to="/meus-veiculos/novo">
-        <BaseButton size="sm" class="flex items-center gap-2">
+        <BaseButton class="flex items-center gap-2">
           <Plus :size="18" />
           Novo Veículo
         </BaseButton>
       </RouterLink>
     </div>
 
-    <div v-if="vehicleStore.isLoading" class="py-12 text-center text-gray-500">
-      Carregando veículos...
+    <div v-if="vehicleStore.isLoading" class="flex flex-col items-center justify-center py-12 text-gray-500">
+      <p>Carregando veículos...</p>
     </div>
 
-    <div v-else-if="vehicleStore.vehicles.length === 0" class="rounded-lg border-2 border-dashed border-gray-300 py-12 text-center">
-      <div class="mb-4 flex justify-center">
-        <div class="rounded-full bg-gray-100 p-4">
-          <Car class="h-8 w-8 text-gray-400" />
-        </div>
-      </div>
-      <h3 class="text-lg font-medium text-gray-900">Nenhum veículo cadastrado</h3>
+    <div v-else-if="vehicleStore.vehicles.length === 0" class="rounded-lg border-2 border-dashed border-gray-300 p-12 text-center">
+      <Car :size="48" class="mx-auto text-gray-400" />
+      <h3 class="mt-2 text-sm font-medium text-gray-900">Nenhum veículo cadastrado</h3>
       <p class="mt-1 text-sm text-gray-500">Cadastre um carro para começar a oferecer caronas.</p>
       <div class="mt-6">
-        <RouterLink to="/meus-veiculos/novo">
-          <BaseButton variant="outline">Cadastrar agora</BaseButton>
+        <RouterLink to="/meus-veiculos/novo" class="text-sm font-medium text-blue-600 hover:underline">
+          Cadastrar agora
         </RouterLink>
       </div>
     </div>
 
-    <div v-else class="grid gap-4 sm:grid-cols-2">
+    <div v-else class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
       <div
         v-for="vehicle in vehicleStore.vehicles"
         :key="vehicle.id"

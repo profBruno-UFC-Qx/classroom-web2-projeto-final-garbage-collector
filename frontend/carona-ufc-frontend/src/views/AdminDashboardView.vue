@@ -12,7 +12,6 @@ const adminStore = useAdminStore()
 const activeTab = ref<'users' | 'rides'>('users')
 const search = ref('')
 
-// --- Configuração da Tabela de Usuários ---
 const headersUsers = [
   { text: "ID", value: "id", sortable: true, width: 50 },
   { text: "Nome", value: "name", sortable: true },
@@ -22,7 +21,6 @@ const headersUsers = [
   { text: "Ações", value: "actions", width: 100 },
 ]
 
-// --- Configuração da Tabela de Caronas ---
 const headersRides = [
   { text: "ID", value: "id", sortable: true, width: 50 },
   { text: "Motorista", value: "driver.name", sortable: true },
@@ -33,7 +31,6 @@ const headersRides = [
   { text: "Ações", value: "actions", width: 100 },
 ]
 
-// Carrega os dados ao montar
 onMounted(() => {
   adminStore.fetchUsers()
   adminStore.fetchRides()

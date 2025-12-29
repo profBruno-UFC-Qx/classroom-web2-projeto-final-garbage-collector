@@ -70,32 +70,30 @@ const handleSubmit = async () => {
 </script>
 
 <template>
-  <div class="mx-auto min-w-[700px] px-4 py-8">
+  <div class="space-y-6 w-full h-full">
 
-    <div class="mb-8">
-      <h1 class="text-2xl font-bold text-gray-900">Oferecer Carona</h1>
-      <p class="mt-1 text-sm text-gray-600">Preencha os dados da viagem e compartilhe seu trajeto.</p>
+    <div>
+      <h1 class="text-3xl font-semibold text-gray-900">Oferecer Carona</h1>
+      <p class="mt-2 text-gray-600">Preencha os dados da viagem e compartilhe seu trajeto.</p>
     </div>
 
-    <div v-if="vehicleStore.isLoading" class="flex flex-col items-center justify-center py-10 text-gray-500">
+    <div v-if="vehicleStore.isLoading" class="flex flex-col items-center justify-center py-12 text-gray-500">
       <Loader2 class="mb-2 h-8 w-8 animate-spin text-blue-600" />
       <p>Carregando seus veículos...</p>
     </div>
 
-    <div v-else-if="!hasVehicles" class="rounded-lg border border-yellow-200 bg-yellow-50 p-6 text-center">
-      <div class="flex justify-center mb-4">
-        <AlertCircle class="h-10 w-10 text-yellow-600" />
-      </div>
-      <h3 class="text-lg font-medium text-yellow-800">Você precisa de um veículo</h3>
-      <p class="mt-2 text-sm text-yellow-700">Para oferecer caronas, é necessário cadastrar um carro primeiro.</p>
+    <div v-else-if="!hasVehicles" class="rounded-lg border-2 border-dashed border-gray-300 p-12 text-center">
+      <AlertCircle :size="48" class="mx-auto text-gray-400" />
+      <h3 class="mt-2 text-sm font-medium text-gray-900">Você precisa de um veículo</h3>
+      <p class="mt-1 text-sm text-gray-500">Para oferecer caronas, é necessário cadastrar um carro primeiro.</p>
       <div class="mt-6">
-        <BaseButton @click="router.push('/meus-veiculos/novo')">
+        <button @click="router.push('/meus-veiculos/novo')" class="text-sm font-medium text-blue-600 hover:underline">
           Cadastrar Veículo Agora
-        </BaseButton>
+        </button>
       </div>
     </div>
 
-    <div v-else class="rounded-lg border border-gray-100 bg-white p-6 shadow-sm md:p-8">
+    <div v-else class="rounded-lg border border-gray-200 bg-white p-8 shadow-sm">
       <form @submit.prevent="handleSubmit" class="space-y-6">
 
         <div>
