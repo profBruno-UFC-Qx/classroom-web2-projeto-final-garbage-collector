@@ -33,6 +33,7 @@ const filteredHistorico = computed(() => {
 })
 
 const showFilters = computed(() => {
+  if (authStore.user?.role !== 'motorista') return false
   if (isLoading.value) return false
   if (activeTab.value === 'agendadas') return hasRidesAgendadas.value
   if (activeTab.value === 'historico') return hasHistory.value

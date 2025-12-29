@@ -4,14 +4,14 @@ import { useRoute, useRouter } from 'vue-router'
 import { toast } from 'vue3-toastify'
 import {
   MapPin, Calendar, Clock, Car,
-  User, MessageCircle, CheckCircle, X, Check, Loader2, AlertCircle
+  User, MessageCircle, CheckCircle, X, Check, Loader2, AlertCircle, Flag, LogOut
 } from 'lucide-vue-next'
 import BaseButton from '@/components/base/BaseButton.vue'
 import api from '@/utils/api'
 import { getErrorMessage } from '@/utils/errorHandler'
 import { useAuthStore } from '@/stores/auth'
 import type { Carona } from '@/types'
-import { formatISOToBr } from '@/utils/dateHandler'
+import { formatISOToBr, getNowInBrazil } from '@/utils/dateHandler'
 
 const route = useRoute()
 const router = useRouter()
@@ -44,6 +44,19 @@ const vagasDisponiveis = computed(() => carona.value?.seats || 0)
 
 const dataFormatada = computed(() => {
   return carona.value?.date ? formatISOToBr(carona.value.date) : ''
+})
+
+const canFinishRide = computed(() => {
+  if (!carona.value || !isDriver.value) return false
+  if (carona.value.status === 'cancelled' || carona.value.status === 'finished') return false
+
+  const today = getNowInBrazil()
+  const rideDate = new Date(carona.value.date)
+
+  today.setHours(0, 0, 0, 0)
+  rideDate.setHours(0, 0, 0, 0)
+
+  return rideDate <= today
 })
 
 const fetchCaronaDetails = async () => {
@@ -80,9 +93,7 @@ const handleSolicitar = async () => {
 const handleGerenciarSolicitacao = async (requestId: number, action: 'accept' | 'reject') => {
   try {
     await api.patch(`/rides/requests/${requestId}/handle`, { action })
-
     toast.success(action === 'accept' ? 'Passageiro aceito!' : 'Solicitação recusada.')
-
     await fetchCaronaDetails()
   }
   catch (error) {
@@ -97,7 +108,7 @@ const handleCancelarCaronaDriver = async () => {
     isActionLoading.value = true
     await api.patch(`/rides/${caronaId}/cancel`)
     toast.success('Carona cancelada com sucesso.')
-    router.push('/minhas-caronas')
+    await fetchCaronaDetails()
   }
   catch (error) {
     toast.error(getErrorMessage(error, 'Erro ao cancelar carona.'))
@@ -107,8 +118,38 @@ const handleCancelarCaronaDriver = async () => {
   }
 }
 
-const handleSairCarona = () => {
-  toast.info('Funcionalidade em desenvolvimento.')
+const handleFinalizarCarona = async () => {
+  if(!confirm('Confirmar a chegada ao destino e finalizar a carona?')) return
+
+  try {
+    isActionLoading.value = true
+    await api.patch(`/rides/${caronaId}/finish`)
+    toast.success('Carona finalizada com sucesso!')
+    await fetchCaronaDetails()
+  }
+  catch (error) {
+    toast.error(getErrorMessage(error, 'Erro ao finalizar carona.'))
+  }
+  finally {
+    isActionLoading.value = false
+  }
+}
+
+const handleSairCarona = async () => {
+  if(!confirm('Tem certeza que deseja sair desta carona? Sua vaga será liberada.')) return
+
+  try {
+    isActionLoading.value = true
+    await api.patch(`/rides/${caronaId}/leave`)
+    toast.success('Você saiu da carona.')
+    await fetchCaronaDetails()
+  }
+  catch (error) {
+    toast.error(getErrorMessage(error, 'Erro ao sair da carona.'))
+  }
+  finally {
+    isActionLoading.value = false
+  }
 }
 
 const openWhatsApp = () => {
@@ -135,24 +176,29 @@ onMounted(() => {
 
     <div v-else-if="carona" class="space-y-6">
 
-      <div v-if="userStatus === 'pending'" class="rounded-lg bg-yellow-50 p-4 text-yellow-800 border border-yellow-200 flex items-center gap-3">
+      <div v-if="carona.status === 'cancelled'" class="rounded-lg bg-red-100 p-4 text-red-900 border border-red-300 flex items-center gap-3">
+        <AlertCircle :size="20" />
+        <p class="text-sm font-bold">Esta carona foi cancelada pelo motorista.</p>
+      </div>
+
+      <div v-else-if="carona.status === 'finished'" class="rounded-lg bg-gray-100 p-4 text-gray-800 border border-gray-300 flex items-center gap-3">
+        <Flag :size="20" />
+        <p class="text-sm font-bold">Esta viagem foi finalizada.</p>
+      </div>
+
+      <div v-else-if="userStatus === 'pending'" class="rounded-lg bg-yellow-50 p-4 text-yellow-800 border border-yellow-200 flex items-center gap-3">
         <Clock :size="20" />
         <p class="text-sm font-medium">Sua solicitação está pendente. Aguarde a confirmação do motorista.</p>
       </div>
 
-      <div v-if="userStatus === 'approved'" class="rounded-lg bg-green-50 p-4 text-green-800 border border-green-200 flex items-center gap-3">
+      <div v-else-if="userStatus === 'approved'" class="rounded-lg bg-green-50 p-4 text-green-800 border border-green-200 flex items-center gap-3">
         <CheckCircle :size="20" />
         <p class="text-sm font-medium">Você está confirmado nesta carona!</p>
       </div>
 
-      <div v-if="userStatus === 'rejected'" class="rounded-lg bg-red-50 p-4 text-red-800 border border-red-200 flex items-center gap-3">
+      <div v-else-if="userStatus === 'rejected'" class="rounded-lg bg-red-50 p-4 text-red-800 border border-red-200 flex items-center gap-3">
         <X :size="20" />
         <p class="text-sm font-medium">Sua solicitação foi recusada pelo motorista.</p>
-      </div>
-
-      <div v-if="carona.status === 'cancelled'" class="rounded-lg bg-red-100 p-4 text-red-900 border border-red-300 flex items-center gap-3">
-        <AlertCircle :size="20" />
-        <p class="text-sm font-bold">Esta carona foi cancelada pelo motorista.</p>
       </div>
 
       <div class="overflow-hidden rounded-lg bg-white shadow-sm border border-gray-200">
@@ -205,7 +251,7 @@ onMounted(() => {
         </div>
       </div>
 
-      <div v-if="isDriver && solicitacoesPendentes.length > 0" class="rounded-lg bg-blue-50 border border-blue-100 p-6">
+      <div v-if="isDriver && solicitacoesPendentes.length > 0 && carona.status === 'open'" class="rounded-lg bg-blue-50 border border-blue-100 p-6">
         <h3 class="flex items-center gap-2 text-lg font-semibold text-blue-900 mb-4">
            <User :size="20" /> Solicitações Pendentes
         </h3>
@@ -254,13 +300,13 @@ onMounted(() => {
               </div>
             </div>
             <div>
-              <h4 class="text-lg font-semibold text-gray-900">{{ carona.driver.name }}</h4>
+              <h4 class="text-lg font-semibold text-gray-900">{{ carona.driver.name.split(' ').slice(0, 2).join(' ') }}</h4>
               <div class="flex items-center gap-1 mt-1 text-sm text-amber-500">
                 <span class="font-medium text-gray-900">Caronas realizadas: {{ carona.driver.totalRides }}</span>
               </div>
 
               <button
-                v-if="userStatus === 'approved' && !isDriver && carona.driver.showPhone"
+                v-if="userStatus === 'approved' && !isDriver && carona.driver.showPhone && carona.status !== 'finished'"
                 @click="openWhatsApp"
                 class="mt-3 inline-flex items-center gap-1.5 text-sm font-medium text-green-600 hover:text-green-700"
               >
@@ -331,14 +377,26 @@ onMounted(() => {
           <BaseButton variant="secondary" @click="router.push('/minhas-caronas')">
             Voltar
           </BaseButton>
+
           <BaseButton
-             v-if="carona.status !== 'cancelled'"
+             v-if="carona.status !== 'cancelled' && carona.status !== 'finished'"
              @click="handleCancelarCaronaDriver"
              class="bg-red-600 hover:bg-red-700 border-red-600 focus:ring-red-600"
              :disabled="isActionLoading"
            >
             <Loader2 v-if="isActionLoading" class="animate-spin mr-2 h-4 w-4" />
             Cancelar Carona
+          </BaseButton>
+
+          <BaseButton
+             v-if="canFinishRide"
+             @click="handleFinalizarCarona"
+             class="bg-blue-600 hover:bg-blue-700 border-blue-600"
+             :disabled="isActionLoading"
+           >
+            <CheckCircle v-if="!isActionLoading" class="mr-2 h-4 w-4" />
+            <Loader2 v-else class="animate-spin mr-2 h-4 w-4" />
+            Finalizar Carona
           </BaseButton>
         </template>
 
@@ -348,9 +406,9 @@ onMounted(() => {
           </BaseButton>
 
           <BaseButton
-             v-if="userStatus === 'viewer'"
+             v-if="userStatus === 'viewer' || userStatus === 'left'"
              @click="handleSolicitar"
-             :disabled="vagasDisponiveis === 0 || isActionLoading || carona.status === 'cancelled'"
+             :disabled="vagasDisponiveis === 0 || isActionLoading || carona.status === 'cancelled' || carona.status === 'finished'"
           >
             <Loader2 v-if="isActionLoading" class="animate-spin mr-2 h-4 w-4" />
             {{ vagasDisponiveis > 0 ? 'Solicitar Vaga' : 'Carona Lotada' }}
@@ -361,9 +419,14 @@ onMounted(() => {
           </BaseButton>
 
           <BaseButton
-             v-if="userStatus === 'approved'"
+             v-if="userStatus === 'approved' && carona.status !== 'finished' && carona.status !== 'cancelled'"
              @click="handleSairCarona"
+             variant="outline"
+             class="bg-red-600 hover:bg-red-700 border-red-600 focus:ring-red-600"
+             :disabled="isActionLoading"
           >
+            <LogOut v-if="!isActionLoading" class="mr-2 h-4 w-4" />
+            <Loader2 v-else class="animate-spin mr-2 h-4 w-4" />
             Sair da Carona
           </BaseButton>
         </template>

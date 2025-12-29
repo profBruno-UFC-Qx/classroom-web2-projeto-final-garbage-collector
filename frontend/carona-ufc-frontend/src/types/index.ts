@@ -67,7 +67,7 @@ export interface Carona {
     plate: string;
   };
   passengers?: Passageiro[];
-  userRequestStatus?: 'pending' | 'approved' | 'rejected' | null;
+  userRequestStatus?: 'pending' | 'approved' | 'rejected' | 'left' | null;
   papel?: 'motorista' | 'passageiro';
 }
 

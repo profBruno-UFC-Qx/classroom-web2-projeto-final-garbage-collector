@@ -90,4 +90,22 @@ export class RideController {
 
       return res.json([...driverDtos, ...passengerDtos]);
   }
+
+  static async leave(req: Request, res: Response) {
+    const { id } = req.params;
+    const userId = req.user?.id;
+    if (!userId) throw new AppError("Não autenticado");
+
+    const result = await RideService.leaveRide(Number(id), userId);
+    return res.json(result);
+  }
+
+  static async finish(req: Request, res: Response) {
+    const { id } = req.params;
+    const userId = req.user?.id;
+    if (!userId) throw new AppError("Não autenticado");
+
+    const result = await RideService.finishRide(Number(id), userId);
+    return res.json(result);
+  }
 }

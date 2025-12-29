@@ -17,6 +17,14 @@ router.get("/:id", RideController.getById);
 
 router.post("/:id/request", RideController.requestSeat); 
 
+router.patch("/:id/leave", RideController.leave);
+
+router.patch(
+  "/:id/finish",
+  ensureRole(["motorista"]),
+  RideController.finish
+);
+
 router.post(
   "/", 
   ensureRole(["motorista"]), 

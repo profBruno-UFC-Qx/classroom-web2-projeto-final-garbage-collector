@@ -1,12 +1,12 @@
 import { AppDataSource } from "../config/data-source";
 import { Ride } from "../entities/Ride";
 import { RideRequest } from "../entities/RideRequest";
-import { Brackets } from "typeorm";
+import { Brackets, LessThan, In } from "typeorm";
 import { Vehicle } from "../entities/Vehicle";
 import { User } from "../entities/User";
 import { CreateRideInput } from "../schemas/ride.schema";
 import { AppError } from "../errors/AppError";
-import { Like, Not } from "typeorm";
+import { getNowInBrazil, getTodayInBrazil } from '../utils/dateValidation';
 
 interface RideFilters {
   origin?: string;
@@ -52,31 +52,34 @@ export class RideService {
   static async list(filters: RideFilters, currentUserId?: number) {
     const { origin, destination, date, page = 1, limit = 10 } = filters;
     const skip = (page - 1) * limit;
-
-    const now = new Date();
-    const todayStr = now.toISOString().split('T')[0];
+    
+    const now = getNowInBrazil();
+    const today = getTodayInBrazil();
+    
+    const todayStr = today.toISOString().split('T')[0];
     const currentHours = String(now.getHours()).padStart(2, '0');
     const currentMinutes = String(now.getMinutes()).padStart(2, '0');
     const currentTimeStr = `${currentHours}:${currentMinutes}`;
-
+    
     const query = rideRepo.createQueryBuilder("ride")
       .leftJoinAndSelect("ride.driver", "driver")
       .leftJoinAndSelect("ride.vehicle", "vehicle")
       .leftJoinAndSelect("ride.requests", "requests")
       .leftJoinAndSelect("requests.passenger", "passenger")
       .where("ride.status = :status", { status: 'open' });
-
+    
     if (currentUserId) {
       query.andWhere("ride.driverId != :currentUserId", { currentUserId });
     }
-
+    
     if (origin) {
       query.andWhere("ride.origin LIKE :origin", { origin: `%${origin}%` });
     }
+    
     if (destination) {
       query.andWhere("ride.destination LIKE :destination", { destination: `%${destination}%` });
     }
-
+    
     if (date) {
       // Caso 1: Usuário filtrou uma data específica
       if (date === todayStr) {
@@ -98,14 +101,14 @@ export class RideService {
           }));
       }));
     }
-
+    
     query.orderBy("ride.date", "ASC")
         .addOrderBy("ride.time", "ASC");
-
+    
     query.skip(skip).take(limit);
-
+    
     const [rides, total] = await query.getManyAndCount();
-
+    
     return {
       data: rides,
       meta: {
@@ -151,17 +154,24 @@ export class RideService {
       throw new AppError("Carona lotada.", 400);
     }
 
-    const existingRequest = await requestRepo.findOneBy({ rideId, passengerId });
-    if (existingRequest) {
-      if (existingRequest.status === 'pending' || existingRequest.status === 'approved') {
+    let request = await requestRepo.findOneBy({ rideId, passengerId });
+
+    if (request) {
+      if (request.status === 'pending' || request.status === 'approved') {
          throw new AppError("Você já solicitou vaga nesta carona.", 400);
       }
+      
+      request.status = 'pending';
+      request.createdAt = new Date(); 
+      
+      await requestRepo.save(request);
+      return request;
     }
 
     const passenger = await userRepo.findOneBy({ id: passengerId });
     if (!passenger) throw new AppError("Usuário não encontrado.", 404);
 
-    const request = requestRepo.create({
+    request = requestRepo.create({
       ride,
       passenger,
       status: 'pending'
@@ -247,4 +257,106 @@ export class RideService {
     
     await rideRepo.remove(ride);
   }
+
+  static async leaveRide(rideId: number, passengerId: number) {
+    const ride = await rideRepo.findOneBy({ id: rideId });
+    if (!ride) throw new AppError("Carona não encontrada.", 404);
+
+    if (ride.status === 'finished' || ride.status === 'cancelled') {
+      throw new AppError("Não é possível sair de uma carona finalizada ou cancelada.", 400);
+    }
+
+    const request = await requestRepo.findOne({
+      where: { rideId, passengerId },
+      relations: ["ride"]
+    });
+
+    if (!request) throw new AppError("Você não está nesta carona.", 404);
+
+    if (request.status !== 'approved') {
+      throw new AppError("Apenas passageiros aprovados podem utilizar a função 'sair'. Para cancelar solicitação pendente, use o cancelamento.", 400);
+    }
+
+    request.status = 'left'; 
+    await requestRepo.save(request);
+
+    ride.seats += 1;
+    if (ride.status === 'full') {
+      ride.status = 'open';
+    }
+    await rideRepo.save(ride);
+
+    return { message: "Você saiu da carona com sucesso." };
+  }
+
+  static async finishRide(rideId: number, driverId: number) {
+    const ride = await rideRepo.findOne({
+      where: { id: rideId },
+      relations: ["driver", "requests"]
+    });
+
+    if (!ride) throw new AppError("Carona não encontrada.", 404);
+
+    if (ride.driverId !== driverId) {
+      throw new AppError("Apenas o motorista pode finalizar a viagem.", 403);
+    }
+
+    if (ride.status === 'cancelled' || ride.status === 'finished') {
+      throw new AppError("Carona já está encerrada.", 400);
+    }
+
+    const today = getTodayInBrazil();
+    const todayStr = today.toISOString().split('T')[0];
+    
+    if (ride.date > todayStr) {
+      throw new AppError("Você não pode finalizar uma carona de uma data futura.", 400);
+    }
+
+    ride.status = 'finished';
+    await rideRepo.save(ride);
+
+    if (this.hasPassengers(ride)) {
+      const driver = ride.driver;
+      driver.totalRides += 1;
+      await userRepo.save(driver);
+    }
+
+    return { message: "Carona finalizada com sucesso!" };
+  }
+
+  static async autoFinishPastRides() {
+    const today = new Date();
+    
+    const todayStr = today.toLocaleDateString('en-CA', { 
+      timeZone: 'America/Sao_Paulo' 
+    });
+
+    const ridesToFinish = await rideRepo.find({
+      where: {
+        status: In(['open', 'full']),
+        date: LessThan(todayStr)
+      },
+      relations: ["driver", "requests"]
+    });
+
+    let count = 0;
+
+    for (const ride of ridesToFinish) {
+      ride.status = 'finished';
+      await rideRepo.save(ride);
+
+      if (this.hasPassengers(ride)) {
+        ride.driver.totalRides += 1;
+        await userRepo.save(ride.driver);
+      }
+      count++;
+    }
+
+    console.log(`[AutoFinish] ${count} caronas antigas foram finalizadas.`);
+  }
+
+  private static hasPassengers(ride: any): boolean {
+    return ride.requests.some((req: any) => req.status === 'approved');
+  }
+
 }

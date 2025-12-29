@@ -21,3 +21,7 @@ export const getMinDate = () => {
   today.setHours(today.getHours() - 3);
   return today.toISOString().split('T')[0];
 };
+
+export function getNowInBrazil(): Date {
+  return new Date(new Date().toLocaleString("en-US", { timeZone: "America/Fortaleza" }));
+}

@@ -9,6 +9,7 @@ import BaseInput from '@/components/base/BaseInput.vue'
 import BaseButton from '@/components/base/BaseButton.vue'
 import { getErrorMessage } from '@/utils/errorHandler'
 import type { RideForm } from '@/types'
+import { getMinDate } from '@/utils/dateHandler'
 
 const router = useRouter()
 const vehicleStore = useVehicleStore()
@@ -149,7 +150,7 @@ const handleSubmit = async () => {
             type="date"
             label="Data"
             required
-            :min="new Date().toISOString().split('T')[0]"
+            :min="getMinDate()"
           >
             <template #icon><Calendar :size="20" /></template>
           </BaseInput>

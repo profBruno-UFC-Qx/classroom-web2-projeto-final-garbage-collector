@@ -10,7 +10,7 @@ const envSchema = z.object({
   MAIL_USER: z.email("MAIL_USER deve ser um e-mail válido"),
   MAIL_PASS: z.string().min(1, "MAIL_PASS é obrigatório (Use App Password)"),
   MAIL_SECURE: z.coerce.boolean().default(true),
-  FRONTEND_URL: z.string().url().default("http://localhost:5173"),
+  FRONTEND_URL: z.url().default("http://localhost:5173"),
 });
 
 const _env = envSchema.safeParse(process.env);

@@ -3,7 +3,7 @@ import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import BaseButton from '@/components/base/BaseButton.vue'
 import {
-  MapPin, Calendar, Users, Clock, CheckCircle, AlertCircle, XCircle
+  MapPin, Calendar, Users, Clock, CheckCircle, AlertCircle, XCircle, Flag
 } from 'lucide-vue-next'
 
 import type { PropType } from 'vue'
@@ -31,6 +31,10 @@ const statusInfo = computed(() => {
     return { text: 'Cancelada', color: 'bg-red-100 text-red-700', icon: AlertCircle }
   }
 
+  if (props.carona.status === 'finished') {
+    return { text: 'Finalizada', color: 'bg-gray-100 text-gray-700', icon: Flag }
+  }
+
   const myStatus = props.carona.userRequestStatus
 
   if (myStatus === 'pending') {
@@ -43,7 +47,8 @@ const statusInfo = computed(() => {
     return { text: 'Recusado', color: 'bg-red-100 text-red-700', icon: XCircle }
   }
 
-  if (props.carona.status === 'full' || props.carona.seats === 0) {
+  // @ts-ignore
+  if (props.carona.status === 'full' || (props.carona.seats === 0 && myStatus !== 'approved')) {
     return { text: 'Lotada', color: 'bg-gray-100 text-gray-600', icon: XCircle }
   }
 
@@ -53,12 +58,13 @@ const statusInfo = computed(() => {
 const buttonLabel = computed(() => {
   if (props.role === 'motorista') return 'Gerenciar'
 
+  if (props.carona?.status === 'finished') return 'Ver Detalhes'
   if (props.carona?.status === 'cancelled') return 'Ver Detalhes'
 
   if (props.carona?.userRequestStatus === 'approved') return 'Ver Detalhes'
   if (props.carona?.userRequestStatus === 'pending') return 'Aguardando...'
 
-  if (props.carona?.seats === 0) return 'Ver Detalhes'
+  if (props.carona?.seats === 0) return 'Ver Detalhes' // Lotada
 
   return 'Solicitar Vaga'
 })
@@ -68,7 +74,12 @@ const isButtonDisabled = computed(() => {
 })
 
 const buttonVariant = computed(() => {
-  if (props.role === 'viewer' && props.carona?.seats && props.carona.seats > 0 && !props.carona.userRequestStatus) {
+  if (
+    props.role === 'viewer' &&
+    props.carona?.status === 'open' &&
+    props.carona?.seats > 0 &&
+    !props.carona.userRequestStatus
+  ) {
       return 'primary'
   }
   return 'secondary'
@@ -100,19 +111,22 @@ const handleAction = () => {
     </div>
 
     <div>
-      <div class="flex items-center gap-3 mb-4 pr-16"> <img
+      <div class="flex items-center gap-3 mb-4 pr-16">
+        <img
           :src="carona?.driver.avatar || defaultAvatarImg"
           alt="Avatar"
           class="h-12 w-12 rounded-full object-cover ring-2 ring-gray-50"
         />
         <div class="overflow-hidden">
           <h3 class="truncate font-semibold text-gray-900" :title="carona?.driver.name">
-            {{ carona?.driver.name || 'Motorista' }}
+            {{ carona?.driver.name.split(' ').slice(0, 2).join(' ') || 'Motorista' }}
           </h3>
           <div class="flex items-center gap-1.5 mt-0.5">
             <span class="truncate text-sm text-gray-500" :title="carona?.vehicle.model">
               {{ carona?.vehicle.model || 'Veículo' }}
             </span>
+             <span class="text-gray-300" v-if="carona?.vehicle.color">•</span>
+             <span class="text-sm text-gray-500" v-if="carona?.vehicle.color">{{ carona?.vehicle.color }}</span>
           </div>
         </div>
       </div>
@@ -167,7 +181,7 @@ const handleAction = () => {
 
         <div class="flex items-center gap-1.5" title="Vagas Disponíveis">
           <Users :size="16" class="text-gray-400" />
-          <span :class="carona?.seats === 0 ? 'text-red-600 font-medium' : ''">
+          <span :class="(carona?.seats === 0 || carona?.status === 'full') ? 'text-red-600 font-medium' : ''">
             {{ carona?.seats }} {{ carona?.seats === 1 ? 'vaga' : 'vagas' }}
           </span>
         </div>
