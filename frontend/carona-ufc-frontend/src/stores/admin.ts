@@ -49,15 +49,18 @@ export const useAdminStore = defineStore('admin', () => {
     }
   }
 
-  const deleteRide = async (rideId: number) => {
+  const cancelRide = async (rideId: number) => {
     try {
-      await api.delete(`/admin/rides/${rideId}`)
+      await api.patch(`/admin/rides/${rideId}/cancel`)
 
-      rides.value = rides.value.filter(r => r.id !== rideId)
+      const foundRide = rides.value.find(r => r.id === rideId)
+      if (foundRide) {
+        foundRide.status = 'cancelled'
+      }
 
-      toast.success('Carona excluída com sucesso.')
+      toast.success('Carona cancelada com sucesso.')
     } catch (error) {
-      toast.error(getErrorMessage(error, 'Erro ao excluir carona.'))
+      toast.error(getErrorMessage(error, 'Erro ao cancelar carona.'))
     }
   }
 
@@ -68,6 +71,6 @@ export const useAdminStore = defineStore('admin', () => {
     fetchUsers,
     fetchRides,
     toggleUserStatus,
-    deleteRide
+    cancelRide
   }
 })

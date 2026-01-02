@@ -11,6 +11,6 @@ adminRoutes.get("/users", AdminController.listUsers);
 adminRoutes.patch("/users/:id/status", AdminController.toggleUserStatus);
 
 adminRoutes.get("/rides", AdminController.listRides);
-adminRoutes.delete("/rides/:id", AdminController.deleteRide);
+adminRoutes.patch("/rides/:id/cancel", AdminController.cancelRide);
 
 export default adminRoutes;

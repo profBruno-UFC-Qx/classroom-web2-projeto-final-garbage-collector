@@ -3,6 +3,7 @@ import { UserService } from "../services/UserService";
 import { RideService } from "../services/RideService";
 import { toUserDTO } from "../dto/user.dto";
 import { toRideDTO } from "../dto/ride.dto";
+import { AppError } from "../errors/AppError";
 
 export class AdminController {
 
@@ -28,9 +29,15 @@ export class AdminController {
     return res.json(ridesDTO);
   }
 
-  static async deleteRide(req: Request, res: Response) {
+  static async cancelRide(req: Request, res: Response) {
     const { id } = req.params;
-    await RideService.deleteRide(Number(id));
-    return res.status(204).send();
+    const userId = req.user?.id;
+    const isAdmin = req.user?.role === 'admin';
+
+    if (!userId) throw new AppError("Não autenticado", 401);
+
+    await RideService.cancelRide(Number(id), userId, isAdmin);
+    
+    return res.json({ message: "Carona cancelada pelo administrador." });
   }
 }

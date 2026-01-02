@@ -130,16 +130,20 @@ export class RideService {
     return ride;
   }
 
-  static async cancelRide(rideId: number, userId: number) {
+  static async cancelRide(rideId: number, userId: number, isAdmin: boolean = false) {
     const ride = await this.getById(rideId);
 
-    if (ride.driverId !== userId) {
-      throw new AppError("Apenas o motorista pode cancelar a viagem.", 403);
+    if (ride.driverId !== userId && !isAdmin) {
+      throw new AppError("Apenas o motorista ou um administrador podem cancelar a viagem.", 403);
+    }
+
+    if (ride.status === 'cancelled') {
+      throw new AppError("Esta carona já está cancelada.", 400);
     }
 
     ride.status = 'cancelled';
     await rideRepo.save(ride);
-  
+
     return { message: "Carona cancelada com sucesso" };
   }
 

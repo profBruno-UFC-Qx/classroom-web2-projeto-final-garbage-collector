@@ -1,11 +1,10 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import Vue3EasyDataTable from 'vue3-easy-data-table'
+import * as Vue3EasyDataTable from 'vue3-easy-data-table'
 import 'vue3-easy-data-table/dist/style.css'
 
 import { useAdminStore } from '@/stores/admin'
-import { Users, Car, Search, Trash2, Ban, CheckCircle, ShieldAlert } from 'lucide-vue-next'
-import BaseButton from '@/components/base/BaseButton.vue'
+import { Users, Car, Search, Trash2, Ban, CheckCircle } from 'lucide-vue-next'
 import BaseInput from '@/components/base/BaseInput.vue'
 
 const adminStore = useAdminStore()
@@ -31,6 +30,13 @@ const headersRides = [
   { text: "Ações", value: "actions", width: 100 },
 ]
 
+const statusMap: Record<string, { label: string; class: string }> = {
+  open: { label: 'Aberta', class: 'bg-green-100 text-green-800' },
+  cancelled: { label: 'Cancelada', class: 'bg-red-100 text-red-800' },
+  finished: { label: 'Finalizada', class: 'bg-blue-100 text-blue-800' },
+  full: { label: 'Lotada', class: 'bg-orange-100 text-orange-800' },
+}
+
 onMounted(() => {
   adminStore.fetchUsers()
   adminStore.fetchRides()
@@ -43,9 +49,9 @@ const handleToggleStatus = async (user: any) => {
   }
 }
 
-const handleDeleteRide = async (ride: any) => {
-  if (confirm(`ATENÇÃO: Deseja excluir permanentemente a carona de ${ride.driver.name}?`)) {
-    await adminStore.deleteRide(ride.id)
+const handleCancelRide = async (ride: any) => {
+  if (confirm(`Deseja realmente cancelar a carona de ${ride.driver.name}?`)) {
+    await adminStore.cancelRide(ride.id)
   }
 }
 </script>
@@ -98,6 +104,10 @@ const handleDeleteRide = async (ride: any) => {
         :items="adminStore.users"
         :search-value="search"
         :loading="adminStore.isLoading"
+
+        :rows-items="[5, 10, 25, 50]"
+        :rows-per-page="10"
+
         buttons-pagination
         alternating
         rows-per-page-message="Linhas por página:"
@@ -139,9 +149,15 @@ const handleDeleteRide = async (ride: any) => {
         :items="adminStore.rides"
         :search-value="search"
         :loading="adminStore.isLoading"
+
+        :rows-items="[5, 10, 25, 50]"
+        :rows-per-page="10"
+
         buttons-pagination
         alternating
         empty-message="Nenhuma carona encontrada"
+        rows-per-page-message="Linhas por página:"
+        rows-of-page-separator-message="de"
       >
         <template #item-driver.name="item">
            <div class="font-medium text-gray-900">{{ item.driver.name }}</div>
@@ -153,25 +169,22 @@ const handleDeleteRide = async (ride: any) => {
         </template>
 
         <template #item-status="item">
-           <span
+          <span
             class="inline-flex rounded-full px-2 text-xs font-semibold leading-5"
-            :class="{
-              'bg-green-100 text-green-800': item.status === 'open',
-              'bg-red-100 text-red-800': item.status === 'cancelled',
-              'bg-gray-100 text-gray-800': item.status === 'finished' || item.status === 'full'
-            }"
+            :class="statusMap[item.status]?.class || 'bg-gray-100 text-gray-800'"
           >
-            {{ item.status === 'open' ? 'Aberta' : (item.status === 'cancelled' ? 'Cancelada' : item.status) }}
+            {{ statusMap[item.status]?.label || item.status }}
           </span>
         </template>
 
         <template #item-actions="item">
           <button
-            @click="handleDeleteRide(item)"
+            v-if="['open', 'full'].includes(item.status)"
+            @click="handleCancelRide(item)"
             class="p-1 rounded hover:bg-red-50 transition-colors text-red-600"
-            title="Excluir Carona (Permanente)"
+            title="Cancelar Carona"
           >
-            <Trash2 :size="18" />
+            <Ban :size="18" />
           </button>
         </template>
       </Vue3EasyDataTable>
