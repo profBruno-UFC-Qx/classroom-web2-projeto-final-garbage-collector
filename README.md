@@ -32,7 +32,7 @@ Espera-se que a plataforma ajude a reduzir o número de atrasos e faltas de estu
 ## :triangular_flag_on_post:	 Principais funcionalidades da aplicação
 
 **Funcionalidades Públicas (acessíveis a Visitantes)**
-* Visualizar a página inicial com a apresentação do projeto e estatísticas gerais.
+* Visualizar a página inicial com a apresentação do projeto.
 
 * Realizar cadastro na plataforma (com validação de e-mail institucional @ufc.br ou @alu.ufc.br).
 
@@ -40,21 +40,15 @@ Espera-se que a plataforma ajude a reduzir o número de atrasos e faltas de estu
 
 **Funcionalidades Restritas (acessíveis a usuários autenticados)**
 
-* **Comuns a todos (Passageiro, Motorista, Admin):**
+* **Passageiro e Motorista:**
 
     * Buscar caronas disponíveis utilizando filtros (origem, destino, data).
 
     * Visualizar e editar o próprio perfil.
 
-    * Visualizar o perfil público de outros usuários.
-
-* **Exclusivas do Passageiro:**
-
     * Solicitar vaga em uma carona.
 
     * Gerenciar (visualizar/cancelar) suas solicitações.
-
-    * Avaliar motoristas após a conclusão da carona.
 
 * **Exclusivas do Motorista:**
 
@@ -66,21 +60,17 @@ Espera-se que a plataforma ajude a reduzir o número de atrasos e faltas de estu
 
 * **Exclusivas do Administrador:**
 
-    * Dashboard com estatísticas gerais da aplicação.
+    * Gerenciar todos os usuários (ativar ou desativar contas).
 
-    * Gerenciar todos os usuários (promover para motorista, banir).
-
-    * Visualizar todas as caronas ativas no sistema.
+    * Gerenciar status de todas as caronas ativas no sistema.
 
 ## :spiral_calendar: Entidades ou tabelas do sistema
 
-* **Usuario:** Armazena os dados de todos os usuários e seus respectivos papéis.
+* **User:** Armazena os dados de todos os usuários e seus respectivos papéis.
 
-* **Veiculo:** Guarda as informações dos veículos cadastrados pelos motoristas (dependente de Usuario).
+* **Vehicle:** Guarda as informações dos veículos cadastrados pelos motoristas (dependente de User).
 
-* **Trajeto:** Registra rotas frequentes salvas pelos usuários (ex: Casa -> Campus).
+* **Ride:** Representa a oferta de uma carona por um motorista, com data, trajeto, hora e vagas (dependente de User e Vehicle).
 
-* **Carona:** Representa a oferta de uma carona por um motorista, com data, hora e vagas (dependente de Usuario, Veiculo e Trajeto).
-
-* **Reserva:** Tabela de ligação que representa a solicitação de um Passageiro para uma Carona.
+* **RideRequest:** Tabela de ligação que representa a solicitação de um Passageiro para uma Carona (dependente de User e Ride).
 
