@@ -3,10 +3,13 @@ import app from "./app";
 import { AppDataSource } from "./config/data-source";
 import { env } from "./config/env"; 
 import { startCronJobs } from "./tasks/cron";
+import { seedDatabase } from "./config/seed";
 
 AppDataSource.initialize()
-  .then(() => {
+  .then(async () => { 
     console.log("Banco de dados inicializado com sucesso.");
+
+    await seedDatabase();
 
     startCronJobs();
 
