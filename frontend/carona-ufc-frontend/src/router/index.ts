@@ -79,6 +79,15 @@ const router = createRouter({
         role: 'motorista'
       }
     },
+    {
+      path: "/meus-veiculos/editar/:id", 
+      name: 'editar-veiculo',
+      component: () => import('../views/CadastrarVeiculoView.vue'),
+      meta: {
+        requiresAuth: true,
+        role: 'motorista'
+      }
+    },
     // --- Rotas de Usuário ---
     {
       path: "/perfil",

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { onMounted } from 'vue'
 import { RouterLink } from 'vue-router'
-import { Plus, Trash2, Car } from 'lucide-vue-next'
+import { Plus, Trash2, Car, Pencil } from 'lucide-vue-next'
 import { useVehicleStore } from '@/stores/vehicle'
 import BaseButton from '@/components/base/BaseButton.vue'
 
@@ -66,13 +66,22 @@ const handleDelete = async (id: number) => {
           </div>
         </div>
 
-        <button
-          @click="handleDelete(vehicle.id)"
-          class="rounded-full p-2 text-gray-400 hover:bg-red-50 hover:text-red-600"
-          title="Excluir veículo"
-        >
-          <Trash2 :size="18" />
-        </button>
+        <div class="flex gap-2"> <RouterLink
+            :to="`/meus-veiculos/editar/${vehicle.id}`"
+            class="rounded-full p-2 text-gray-400 hover:bg-blue-50 hover:text-blue-600"
+            title="Editar veículo"
+          >
+            <Pencil :size="18" />
+          </RouterLink>
+
+          <button
+            @click="handleDelete(vehicle.id)"
+            class="rounded-full p-2 text-gray-400 hover:bg-red-50 hover:text-red-600"
+            title="Excluir veículo"
+          >
+            <Trash2 :size="18" />
+          </button>
+        </div>
       </div>
     </div>
 

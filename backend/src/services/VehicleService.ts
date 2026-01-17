@@ -2,6 +2,8 @@ import { AppDataSource } from "../config/data-source";
 import { Vehicle } from "../entities/Vehicle";
 import { CreateVehicleInput } from "../schemas/vehicle.schema";
 import { AppError } from "../errors/AppError"; 
+import { UpdateVehicleInput } from "../schemas/vehicle.schema";
+import { Not } from "typeorm";
 
 const vehicleRepository = AppDataSource.getRepository(Vehicle);
 
@@ -39,5 +41,35 @@ export class VehicleService {
       where: { userId },
       order: { createdAt: "DESC" }
     });
+  }
+
+  static async update(vehicleId: number, userId: number, data: UpdateVehicleInput) {
+    const vehicle = await vehicleRepository.findOneBy({ id: vehicleId });
+
+    if (!vehicle) {
+      throw new AppError("Veículo não encontrado.", 404);
+    }
+
+    if (vehicle.userId !== userId) {
+      throw new AppError("Você não tem permissão para editar este veículo.", 403);
+    }
+
+    if (data.plate) {
+      const plateExists = await vehicleRepository.findOne({
+        where: { 
+          plate: data.plate,
+          id: Not(vehicleId)
+        }
+      });
+
+      if (plateExists) {
+        throw new AppError("Esta placa já está cadastrada em outro veículo.", 409);
+      }
+    }
+
+    vehicleRepository.merge(vehicle, data);
+    
+    await vehicleRepository.save(vehicle);
+    return vehicle;
   }
 }

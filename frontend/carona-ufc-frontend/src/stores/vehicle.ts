@@ -51,6 +51,23 @@ export const useVehicleStore = defineStore('vehicle', () => {
     }
   }
 
+  const updateVehicle = async (id: number, vehicleData: Partial<Vehicle>) => {
+    try {
+      const { data } = await api.patch(`/vehicles/${id}`, vehicleData)
+
+      const index = vehicles.value.findIndex(v => v.id === id)
+      if (index !== -1) {
+        vehicles.value[index] = data
+      }
+
+      return true
+    } catch (error: any) {
+      const message = error.response?.data?.message || 'Erro ao atualizar veículo.'
+      toast.error(message)
+      throw error
+    }
+  }
+
   const removeVehicle = async (id: number) => {
     try {
       await api.delete(`/vehicles/${id}`)
@@ -68,6 +85,7 @@ export const useVehicleStore = defineStore('vehicle', () => {
     isLoading,
     fetchVehicles,
     addVehicle,
-    removeVehicle
+    removeVehicle,
+    updateVehicle
   }
 })

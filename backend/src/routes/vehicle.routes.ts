@@ -4,7 +4,7 @@ import { ensureAuthenticated } from "../middlewares/ensureAuthenticated";
 import { ensureAccountActive } from "../middlewares/ensureAccountActive"; 
 import { ensureRole } from "../middlewares/ensureRole"; 
 import { validate } from "../middlewares/validateResource";
-import { createVehicleSchema } from "../schemas/vehicle.schema";
+import { createVehicleSchema, updateVehicleSchema } from "../schemas/vehicle.schema";
 
 const router = Router();
 
@@ -22,6 +22,13 @@ router.get(
   "/", 
   ensureRole(["motorista"]), 
   VehicleController.list
+);
+
+router.patch(
+  "/:id", 
+  ensureRole(["motorista"]), 
+  validate(updateVehicleSchema), 
+  VehicleController.update
 );
 
 router.delete(

@@ -42,4 +42,17 @@ export class VehicleController {
     await VehicleService.delete(Number(id), userId);
     return res.status(204).send();
   }
+
+  static async update(req: Request, res: Response) {
+    const userId = req.user?.id;
+    const { id } = req.params;
+
+    if (!userId) {
+      throw new AppError("Usuário não autenticado.", 401);
+    }
+
+    const vehicle = await VehicleService.update(Number(id), userId, req.body);
+    
+    return res.json(toVehicleDTO(vehicle));
+  }
 }
