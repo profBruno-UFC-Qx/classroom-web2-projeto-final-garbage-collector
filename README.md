@@ -1,6 +1,6 @@
 [![Review Assignment Due Date](https://classroom.github.com/assets/deadline-readme-button-22041afd0340ce965d47ae6ef1cefeee28c7c493a6346c4f15d667ab976d596c.svg)](https://classroom.github.com/a/iVa2Dd1Z)
 [![Open in Codespaces](https://classroom.github.com/assets/launch-codespace-2972f46106e565e64193e422d61a12cf1da4916b45550586e14ef0a7c637dd04.svg)](https://classroom.github.com/open-in-codespaces?assignment_repo_id=20869603)
-# :checkered_flag: NOME DO PROJETO
+# :checkered_flag: CARONA UFC
 
 O Carona UFC é um sistema web de caronas solidárias exclusivo para a comunidade acadêmica (alunos e servidores) da Universidade Federal do Ceará.
 
@@ -69,8 +69,63 @@ Espera-se que a plataforma ajude a reduzir o número de atrasos e faltas de estu
 * **User:** Armazena os dados de todos os usuários e seus respectivos papéis.
 
 * **Vehicle:** Guarda as informações dos veículos cadastrados pelos motoristas (dependente de User).
-
+  
 * **Ride:** Representa a oferta de uma carona por um motorista, com data, trajeto, hora e vagas (dependente de User e Vehicle).
 
 * **RideRequest:** Tabela de ligação que representa a solicitação de um Passageiro para uma Carona (dependente de User e Ride).
 
+## 🚀 Instruções para Execução
+Para rodar o projeto localmente, siga os passos abaixo:
+
+### Backend
+Clone o repositório:
+```bash
+git clone git@github.com:profBruno-UFC-Qx/classroom-web2-projeto-final-garbage-collector.git
+```
+Navegue para o diretório do backend:
+```bash
+cd classroom-web2-projeto-final-garbage-collector/backend 
+```
+Copie o arquivo de variáveis de ambiente:
+```bash
+cp .env-example .env
+```
+Entre no diretório `src`, instale as dependências e inicie o servidor:
+```bash
+cd src/
+npm install
+npm run dev
+```
+
+### Frontend
+Abra um novo terminal e navegue para o diretório do frontend:
+```bash
+cd classroom-web2-projeto-final-garbage-collector/frontend/carona-ufc-frontend/src/
+```
+Instale as dependências e inicie o servidor:
+```bash
+npm install
+npm run dev
+```
+
+O frontend estará disponível em: http://localhost:5173/
+
+> **Nota:** Se você testou outros projetos na mesma porta, limpe o localStorage do navegador antes de testar este projeto para evitar conflitos de autenticação. Pressione F12 → Console → digite `localStorage.clear()` → Enter.
+
+## 👥 Usuários de Teste
+
+O sistema cria automaticamente usuários de exemplo via *database seeding* para facilitar os testes. O cadastro real exige confirmação de email via link e aceita apenas emails com domínio `@alu.ufc.br` ou `@ufc.br`.
+
+### Credenciais disponíveis:
+
+**Administrador:**
+- Email: `admin@admin.com`
+- Senha: `admin`
+
+**Passageiro:**
+- Email: `passageiro@gmail.com`
+- Senha: `senha123`
+
+**Motorista:**
+- Email: `motorista@gmail.com`
+- Senha: `senha123`
