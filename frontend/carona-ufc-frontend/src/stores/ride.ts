@@ -21,8 +21,19 @@ export const useRideStore = defineStore('ride', () => {
     }
   }
 
+  const updateRide = async (id: number, payload: Partial<CreateRidePayload>) => {
+    isLoading.value = true
+    try {
+      const { data } = await api.patch(`/rides/${id}`, payload)
+      return data
+    } finally {
+      isLoading.value = false
+    }
+  }
+
   return {
     createRide,
+    updateRide,
     isLoading
   }
 })

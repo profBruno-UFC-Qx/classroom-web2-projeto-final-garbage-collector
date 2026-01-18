@@ -4,7 +4,7 @@ import { RideRequest } from "../entities/RideRequest";
 import { Brackets, LessThan, In } from "typeorm";
 import { Vehicle } from "../entities/Vehicle";
 import { User } from "../entities/User";
-import { CreateRideInput } from "../schemas/ride.schema";
+import { CreateRideInput, UpdateRideInput } from "../schemas/ride.schema";
 import { AppError } from "../errors/AppError";
 import { getNowInBrazil, getTodayInBrazil } from '../utils/dateValidation';
 
@@ -127,6 +127,49 @@ export class RideService {
     });
 
     if (!ride) throw new AppError("Carona não encontrada.", 404);
+    return ride;
+  }
+
+  static async update(rideId: number, userId: number, data: UpdateRideInput) {
+    const ride = await rideRepo.findOne({
+    where: { id: rideId },
+    relations: ["driver", "vehicle", "requests", "requests.passenger"] 
+  });
+
+    if (!ride) {
+      throw new AppError("Carona não encontrada.", 404);
+    }
+
+    if (ride.driverId !== userId) {
+      throw new AppError("Você não tem permissão para editar esta carona.", 403);
+    }
+
+    if (['cancelled', 'finished'].includes(ride.status)) {
+      throw new AppError(`Não é possível editar uma carona que já foi ${ride.status}.`, 400);
+    }
+
+    const hasActiveRequests = ride.requests?.some(req => 
+      ['pending', 'approved'].includes(req.status)
+    );
+
+    if (hasActiveRequests) {
+      throw new AppError(
+        "Esta carona possui passageiros confirmados ou solicitações pendentes e não pode ser editada.", 
+        400
+      );
+    }
+
+    if (data.vehicleId) {
+    const vehicle = await vehicleRepo.findOneBy({ id: data.vehicleId });
+    if (!vehicle || vehicle.userId !== userId) {
+      throw new AppError("O veículo informado é inválido ou não pertence a você.", 403);
+    }
+    ride.vehicle = vehicle;
+  }
+
+    rideRepo.merge(ride, data);
+    await rideRepo.save(ride);
+
     return ride;
   }
 

@@ -41,4 +41,7 @@ export const createRideSchema = z.object({
   }
 );
 
+export const updateRideSchema = createRideSchema.partial();
+
+export type UpdateRideInput = z.infer<typeof updateRideSchema>;
 export type CreateRideInput = z.infer<typeof createRideSchema>;

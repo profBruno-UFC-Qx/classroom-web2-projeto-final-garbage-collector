@@ -56,6 +56,15 @@ const router = createRouter({
       }
     },
     {
+      path: "/carona/editar/:id",
+      name: 'editar-carona',
+      component: () => import('../views/OferecerCaronaView.vue'),
+      meta: {
+        requiresAuth: true,
+        role: 'motorista'
+      }
+    },
+    {
       path: "/minhas-caronas",
       name: 'minhas-caronas',
       component: () => import('../views/MinhasCaronasView.vue'),
@@ -80,7 +89,7 @@ const router = createRouter({
       }
     },
     {
-      path: "/meus-veiculos/editar/:id", 
+      path: "/meus-veiculos/editar/:id",
       name: 'editar-veiculo',
       component: () => import('../views/CadastrarVeiculoView.vue'),
       meta: {

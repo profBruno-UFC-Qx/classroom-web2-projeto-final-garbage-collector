@@ -1,5 +1,4 @@
 import axios from "axios";
-import { env } from "../config/env";
 
 export const uploadToImgBB = async (imageBuffer: Buffer): Promise<string> => {
   try {

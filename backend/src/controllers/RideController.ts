@@ -42,6 +42,22 @@ export class RideController {
     });
   }
 
+  static async update(req: Request, res: Response) {
+    const { id } = req.params;
+    const userId = req.user?.id;
+
+    if (!userId) {
+      throw new AppError("Usuário não autenticado.", 401);
+    }
+
+    const updatedRide = await RideService.update(Number(id), userId, req.body);
+    
+    return res.json({
+      message: "Carona atualizada com sucesso!",
+      ride: toRideDTO(updatedRide, userId)
+    });
+  }
+
   static async getById(req: Request, res: Response) {
     const { id } = req.params;
     const ride = await RideService.getById(Number(id));

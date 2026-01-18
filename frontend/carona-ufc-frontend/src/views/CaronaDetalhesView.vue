@@ -4,7 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { toast } from 'vue3-toastify'
 import {
   MapPin, Calendar, Clock, Car,
-  User, MessageCircle, CheckCircle, X, Check, Loader2, AlertCircle, Flag, LogOut
+  User, MessageCircle, CheckCircle, X, Check, Loader2, AlertCircle, Flag, LogOut, Pencil
 } from 'lucide-vue-next'
 import BaseButton from '@/components/base/BaseButton.vue'
 import api from '@/utils/api'
@@ -24,6 +24,18 @@ const carona = ref<Carona | null>(null)
 
 const isDriver = computed(() => {
   return carona.value?.driver.id === authStore.user?.id
+})
+
+const canEditRide = computed(() => {
+  if (!carona.value || !isDriver.value) return false
+
+  const statusPermitido = !['cancelled', 'finished'].includes(carona.value.status)
+
+  const hasActiveRequests = carona.value.passengers?.some(p =>
+    ['pending', 'approved'].includes(p.status)
+  )
+
+  return statusPermitido && !hasActiveRequests
 })
 
 const passageirosAprovados = computed(() => {
@@ -376,6 +388,16 @@ onMounted(() => {
         <template v-if="isDriver">
           <BaseButton variant="secondary" @click="router.push('/minhas-caronas')">
             Voltar
+          </BaseButton>
+
+          <BaseButton
+            v-if="canEditRide"
+            variant="secondary"
+            @click="router.push(`/carona/editar/${carona.id}`)"
+            class="border-gray-300"
+          >
+            <Pencil :size="18" class="mr-2" />
+            Editar Carona
           </BaseButton>
 
           <BaseButton

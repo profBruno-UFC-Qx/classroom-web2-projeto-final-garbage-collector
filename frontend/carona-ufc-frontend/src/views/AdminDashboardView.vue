@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import * as Vue3EasyDataTable from 'vue3-easy-data-table'
+// @ts-ignore
+import Vue3EasyDataTable from 'vue3-easy-data-table'
 import 'vue3-easy-data-table/dist/style.css'
 
 import { useAdminStore } from '@/stores/admin'

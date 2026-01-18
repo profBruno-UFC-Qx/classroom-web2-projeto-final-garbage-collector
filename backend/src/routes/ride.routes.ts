@@ -4,7 +4,7 @@ import { ensureAuthenticated } from "../middlewares/ensureAuthenticated";
 import { ensureAccountActive } from "../middlewares/ensureAccountActive"; 
 import { ensureRole } from "../middlewares/ensureRole"; 
 import { validate } from "../middlewares/validateResource";
-import { createRideSchema } from "../schemas/ride.schema";
+import { createRideSchema, updateRideSchema } from "../schemas/ride.schema";
 
 const router = Router();
 
@@ -36,6 +36,13 @@ router.patch(
   "/:id/cancel",
   ensureRole(["motorista"]),
   RideController.cancel
+);
+
+router.patch(
+  "/:id",
+  ensureRole(["motorista"]),
+  validate(updateRideSchema),
+  RideController.update
 );
 
 router.patch(

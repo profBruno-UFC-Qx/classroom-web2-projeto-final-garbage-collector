@@ -20,7 +20,7 @@ const handleBack = () => {
     <h1 class="mb-2 text-3xl font-bold text-gray-900">Acesso Restrito</h1>
 
     <p class="mb-8 max-w-md text-gray-600">
-      Você não tem permissão para acessar esta página. Esta área é exclusiva para perfis de <strong>Motorista</strong>.
+      Você não tem permissão para acessar esta página.
     </p>
 
     <BaseButton @click="handleBack" size="lg">

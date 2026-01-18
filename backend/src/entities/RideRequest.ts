@@ -2,6 +2,8 @@ import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, CreateDateColumn, Jo
 import { User } from "./User";
 import { Ride } from "./Ride";
 
+export type RideRequestStatus = 'pending' | 'approved' | 'rejected' | 'left';
+
 @Entity()
 export class RideRequest {
   @PrimaryGeneratedColumn()
@@ -21,8 +23,11 @@ export class RideRequest {
   @Column()
   passengerId!: number;
 
-  @Column({ default: 'pending' })
-  status!: string;
+  @Column({
+    type: "varchar",
+    default: "pending"
+  })
+  status!: RideRequestStatus;
 
   @CreateDateColumn()
   createdAt!: Date;
