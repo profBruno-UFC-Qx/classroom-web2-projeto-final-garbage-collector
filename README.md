@@ -48,8 +48,6 @@ Espera-se que a plataforma ajude a reduzir o número de atrasos e faltas de estu
 
     * Solicitar vaga em uma carona.
 
-    * Gerenciar (visualizar/cancelar) suas solicitações.
-
 * **Exclusivas do Motorista:**
 
     * Gerenciar seus veículos (CRUD - Cadastrar, Listar, Atualizar, Deletar).
