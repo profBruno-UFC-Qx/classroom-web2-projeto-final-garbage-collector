@@ -3,7 +3,6 @@ import { ref } from 'vue'
 import api from '@/utils/api'
 import type { CreateRidePayload } from '@/types'
 
-
 export const useRideStore = defineStore('ride', () => {
   const isLoading = ref(false)
 

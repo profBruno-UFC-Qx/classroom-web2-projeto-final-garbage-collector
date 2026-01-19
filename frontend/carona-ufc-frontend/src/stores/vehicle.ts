@@ -2,17 +2,10 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import api from '@/utils/api'
 import { toast } from 'vue3-toastify'
-
-export interface Vehicle {
-  id: number
-  brand: string
-  model: string
-  color: string
-  plate: string
-}
+import { type Veiculo } from '@/types'
 
 export const useVehicleStore = defineStore('vehicle', () => {
-  const vehicles = ref<Vehicle[]>([])
+  const vehicles = ref<Veiculo[]>([])
   const isLoading = ref(false)
 
   const fetchVehicles = async () => {
@@ -51,7 +44,7 @@ export const useVehicleStore = defineStore('vehicle', () => {
     }
   }
 
-  const updateVehicle = async (id: number, vehicleData: Partial<Vehicle>) => {
+  const updateVehicle = async (id: number, vehicleData: Partial<Veiculo>) => {
     try {
       const { data } = await api.patch(`/vehicles/${id}`, vehicleData)
 

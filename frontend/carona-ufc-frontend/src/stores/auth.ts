@@ -36,19 +36,17 @@ export const useAuthStore = defineStore('auth', () => {
         email,
         password: pass
       })
-      // Não faço login direto porque meu back não retorna o token no registro
     } catch (error: any) {
       console.error('Erro no cadastro:', error.response?.data?.message)
       throw error
     }
   }
 
-  const updateUser = (userData: Partial<User>) => {
-    if (!user.value) return
-
-    user.value = { ...user.value, ...userData }
-
-    localStorage.setItem('user', JSON.stringify(user.value))
+  const updateUser = (userData: Partial<User>): void => {
+    if (user.value) {
+      user.value = { ...user.value, ...userData }
+      localStorage.setItem('user', JSON.stringify(user.value))
+    }
   }
 
   const logout = () => {
